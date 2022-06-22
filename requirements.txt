@@ -1,0 +1,15 @@
+pandas
+numpy
+matplotlib
+openpyxl
+jupyter
+paho-mqtt
+seaborn
+nltk
+gensim
+pipwin
+pyttsx3
+SpeechRecognition
+gtts
+pyannote.audio==1.1.1
+ffmpeg-python
