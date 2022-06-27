@@ -1,0 +1,5 @@
+*.bat
+Roots.txt
+Conversations/
+*.wav
+config.json
