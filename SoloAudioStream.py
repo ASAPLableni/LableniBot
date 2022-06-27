@@ -16,9 +16,9 @@ call_to_omniverse = " python " + ROOT_TO_OMNIVERSE + "/my_test_client.py"
 # /World/audio2face/player_streaming_instance_01
 # /World/audio2face/player_streaming_instance
 
-AUDIO_NAME = "/audio_bot_aws.wav"
-OMNIVERSE_AVATAR = "/World/audio2face/player_streaming_instance"
+AUDIO_NAME = "AudioExamples/audio_bot_aws.wav"
+OMNIVERSE_AVATAR = "/audio2face/player_instance"
 
-call_to_omniverse += " " + ROOT_TO_OMNIVERSE + AUDIO_NAME + " " + OMNIVERSE_AVATAR
+call_to_omniverse += " " + AUDIO_NAME + " " + OMNIVERSE_AVATAR
 print("Message to Omniverse ", call_to_omniverse)
 subprocess.call(call_to_omniverse, shell=True)
