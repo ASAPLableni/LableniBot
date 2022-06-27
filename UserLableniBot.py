@@ -49,7 +49,9 @@ session = Session(
 )
 polly = session.client("polly", region_name='eu-west-1')
 
-# ### Some parameters ###
+# #######################
+# ### Some PARAMETERS ###
+# #######################
 # Time to wait until ask the user to repeat.
 waitTime = 15
 # Audio record parameters. 
