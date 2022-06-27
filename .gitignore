@@ -3,3 +3,4 @@ Roots.txt
 Conversations/
 *.wav
 config.json
+__pycache__

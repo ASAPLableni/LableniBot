@@ -1,3 +1,4 @@
+# Install a Pytorch library according with your CUDA version.
 pandas
 numpy
 matplotlib
@@ -13,3 +14,6 @@ SpeechRecognition
 gtts
 pyannote.audio==1.1.1
 ffmpeg-python
+googletrans==4.0.0rc1
+transformers
+boto3
