@@ -4,3 +4,4 @@ Conversations/
 *.wav
 config.json
 __pycache__
+*.idea
