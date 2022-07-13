@@ -1,29 +1,30 @@
 from datetime import datetime
 
-def get_current_time():
 
+def get_current_time():
     t = datetime.now()
 
     year = str(t.year)
 
     month = str(t.month)
-    if len(month) == 1: month = "0" + month 
+    month = "0" + month if len(month) == 1 else month
 
     day = str(t.day)
-    if len(day) == 1: day = "0" + day 
+    day = "0" + day if len(day) == 1 else day
 
     hour = str(t.hour)
-    if len(hour) == 1: hour = "0" + hour 
+    hour = "0" + hour if len(hour) == 1 else hour
 
     mint = str(t.minute)
-    if len(mint) == 1: mint = "0" + mint 
+    if len(mint) == 1: mint = "0" + mint
+    mint = "0" + mint if len(mint) == 1 else mint
 
     sec = str(t.second)
-    if len(sec) == 1: sec = "0" + sec 
+    sec = "0" + sec if len(sec) == 1 else sec
 
-    msec = str(t.microsecond)
+    mili_sec = str(t.microsecond)
 
-    date_str = year + "-" + month + "-" + day + " " + hour + ":" + mint + ":" + sec + "." + msec
-    date_str_other_form = year + month + day + "_" + hour + mint + sec + "." + msec[:3]
+    date_str = year + "-" + month + "-" + day + " " + hour + ":" + mint + ":" + sec + "." + mili_sec
+    date_str_other_form = year + month + day + "_" + hour + mint + sec + "." + mili_sec[:3]
 
     return date_str, t.timestamp(), date_str_other_form

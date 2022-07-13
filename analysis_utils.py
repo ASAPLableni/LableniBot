@@ -24,6 +24,7 @@ def get_p_string(p):
     else:
         return "***"
 
+
 def stat_print(list_x, name, precision=4, quantile=False):
     if quantile:
         print(

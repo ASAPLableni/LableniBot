@@ -1,12 +1,14 @@
 import pandas as pd
 import subprocess
-from datetime import datetime
-import wave, time, os, pyaudio, pyttsx3, sys
+import wave
+import time
+import os
+import pyaudio
 import speech_recognition as sr
 
 # from googletrans import Translator
-from gtts import gTTS 
-  
+from gtts import gTTS
+
 # This module is imported so that we can  
 # play the converted audio 
 import paho.mqtt.client as mqtt
@@ -21,7 +23,7 @@ import utils as ute
 # Create a client using the credentials and region defined in the [adminuser]
 # section of the AWS credentials file (~/.aws/credentials).
 session = Session(
-    aws_access_key_id="AKIA5253QQ44EM6O6P4Q", 
+    aws_access_key_id="AKIA5253QQ44EM6O6P4Q",
     aws_secret_access_key="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"
 )
 polly = session.client("polly", region_name='eu-west-1')
@@ -39,13 +41,14 @@ CHANNELS = 2
 RATE = 44100
 RECORD_SECONDS = 8
 
+
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
     client.subscribe("topic/bot_to_person")
 
+
 def on_message(client, userdata, msg):
-    
-    #t = datetime.now()
+    # t = datetime.now()
     global my_global_mssg
 
     message = msg.payload.decode()
@@ -53,6 +56,7 @@ def on_message(client, userdata, msg):
 
     client.disconnect()
     client.loop_stop()
+
 
 _, _, init_of_session = ute.get_current_time()
 
@@ -103,16 +107,16 @@ try:
                 p = pyaudio.PyAudio()
 
                 stream = p.open(format=FORMAT,
-	                            channels=CHANNELS,
-	                            rate=RATE,
-	                            input=True,
-	                            frames_per_buffer=CHUNK)
+                                channels=CHANNELS,
+                                rate=RATE,
+                                input=True,
+                                frames_per_buffer=CHUNK)
 
                 print("* recording")
 
                 frames = []
                 for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-                    data = stream.read(CHUNK, exception_on_overflow = False)
+                    data = stream.read(CHUNK, exception_on_overflow=False)
                     frames.append(data)
 
                 print("* done recording")
@@ -121,7 +125,7 @@ try:
                 stream.close()
                 p.terminate()
 
-                wf = wave.open(WAVE_OUTPUT_FILENAME + str(ct_voice_id)+".wav", 'wb')
+                wf = wave.open(WAVE_OUTPUT_FILENAME + str(ct_voice_id) + ".wav", 'wb')
                 wf.setnchannels(CHANNELS)
                 wf.setsampwidth(p.get_sample_size(FORMAT))
                 wf.setframerate(RATE)
@@ -129,7 +133,7 @@ try:
                 wf.close()
 
                 r = sr.Recognizer()
-                with sr.AudioFile(WAVE_OUTPUT_FILENAME + str(ct_voice_id)+".wav") as source:
+                with sr.AudioFile(WAVE_OUTPUT_FILENAME + str(ct_voice_id) + ".wav") as source:
                     audio = r.record(source)
 
                 spanish_text = r.recognize_google(audio, language="es-EU")
@@ -143,6 +147,7 @@ try:
 
             else:
                 print("Please select between 'write' or 'voice' method")
+                break
 
             print("Your spanish message", spanish_text)
 
@@ -151,7 +156,7 @@ try:
 
         t_str, t_unix, _ = ute.get_current_time()
         bot_result_list.append({
-            "SubjectId": subject_id
+            "SubjectId": subject_id,
             "SubjectName": subject_name,
             "TimeStr": t_str,
             "UnixTimestamp": t_unix,
@@ -167,28 +172,28 @@ try:
 
         df_to_save = pd.DataFrame(bot_result_list)
 
-        df_to_save.to_excel("Conversations/Conv_"+str(init_of_session)+".xlsx", index=False)
+        df_to_save.to_excel("Conversations/Conv_" + str(init_of_session) + ".xlsx", index=False)
 
         client = mqtt.Client()
         client.connect("127.0.0.1", 1883)
         client.publish("topic/person_to_bot", spanish_text)
-        #client.disconnect()
+        # client.disconnect()
 
         counter += 1
 
         print("message send")
 
         client = mqtt.Client()
-        client.connect("127.0.0.1" , 1883)
+        client.connect("127.0.0.1", 1883)
 
         # client.loop_start()
 
-        print( "Mensaje anterior:....", my_global_mssg )
+        print("Mensaje anterior:....", my_global_mssg)
 
         client.on_connect = on_connect
         client.on_message = on_message
 
-        print( "Mensaje nuevo:....", my_global_mssg )
+        print("Mensaje nuevo:....", my_global_mssg)
 
         # client.loop_forever()
 
@@ -213,7 +218,7 @@ try:
 
         t_str, t_unix, _ = ute.get_current_time()
         bot_result_list.append({
-            "SubjectId": subject_id
+            "SubjectId": subject_id,
             "SubjectName": subject_name,
             "TimeStr": t_str,
             "UnixTimestamp": t_unix,
@@ -224,7 +229,7 @@ try:
 
         df_to_save = pd.DataFrame(bot_result_list)
 
-        df_to_save.to_excel("Conversations/Conv_"+str(init_of_session)+".xlsx", index=False)
+        df_to_save.to_excel("Conversations/Conv_" + str(init_of_session) + ".xlsx", index=False)
 
         print("Lo que la máquina va a decir", translate_msgg)
 
@@ -232,27 +237,27 @@ try:
         # ### USING AWS ###
         # #################
 
-        RATE = 16000 # Polly supports 16000Hz and 8000Hz output for PCM format
+        RATE = 16000  # Polly supports 16000Hz and 8000Hz output for PCM format
 
         response = polly.synthesize_speech(
-            Text=translate_msgg, 
-            OutputFormat="pcm", 
+            Text=translate_msgg,
+            OutputFormat="pcm",
             VoiceId="Lucia",
             SampleRate=str(RATE),
             Engine="neural"
         )
-        
-        #Initializing variables
-        CHANNELS = 1 #Polly's output is a mono audio stream
-        OUTPUT_FILE_IN_WAVE = "audio_bot_aws.wav" #WAV format Output file  name
-        FRAMES = []
-        WAV_SAMPLE_WIDTH_BYTES = 2 # Polly's output is a stream of 16-bits (2 bytes) samples
 
-        #Processing the response to audio stream
+        # Initializing variables
+        CHANNELS = 1  # Polly's output is a mono audio stream
+        OUTPUT_FILE_IN_WAVE = "audio_bot_aws.wav"  # WAV format Output file  name
+        FRAMES = []
+        WAV_SAMPLE_WIDTH_BYTES = 2  # Polly's output is a stream of 16-bits (2 bytes) samples
+
+        # Processing the response to audio stream
         STREAM = response.get("AudioStream")
         FRAMES.append(STREAM.read())
 
-        WAVEFORMAT = wave.open(ROOT_TO_OMNI + "/" + OUTPUT_FILE_IN_WAVE, 'wb')
+        WAVEFORMAT = wave.open(ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE, 'wb')
         WAVEFORMAT.setnchannels(CHANNELS)
         WAVEFORMAT.setsampwidth(WAV_SAMPLE_WIDTH_BYTES)
         WAVEFORMAT.setframerate(RATE)

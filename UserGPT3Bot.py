@@ -1,27 +1,46 @@
 import numpy as np
 import pandas as pd
 import subprocess
-from datetime import datetime
-import wave, time, os, pyaudio, pyttsx3, sys
+# from datetime import datetime
+import wave
+import time
+import os
+import pyaudio
+import json
+# import pyttsx3
+# import sys
 import speech_recognition as sr
+import openai
 
-# from googletrans import Translator
-from gtts import gTTS 
+from googletrans import Translator
+# from gtts import gTTS
 
 from boto3 import Session
-from botocore.exceptions import BotoCoreError, ClientError
-from contextlib import closing
-from tempfile import gettempdir
+# from botocore.exceptions import BotoCoreError, ClientError
+# from contextlib import closing
+# from tempfile import gettempdir
 
 import utils as ute
 
+# Initialize the translator model
+google_translator = Translator()
+
 print(" ***** Models loaded ***** ")
 
+# ###########################
+# ### Opening CONFIG file ###
+# ###########################
+config_json = open('config.json')
+config_dict = json.load(config_json)
+
 session = Session(
-    aws_access_key_id="AKIA5253QQ44EM6O6P4Q", 
-    aws_secret_access_key="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"
+    aws_access_key_id=config_dict["AWS_ACCESS_KEY_ID"],
+    aws_secret_access_key=config_dict["AWS_SECRET_ACCESS_KEY"]
 )
 polly = session.client("polly", region_name='eu-west-1')
+
+openai.api_key = config_dict["OPENAI_KEY"]
+INITIAL_TOKENS_OPENAI = 50
 
 # ### Some parameters ###
 # Time to wait until ask the user to repeat.
@@ -44,7 +63,7 @@ os.mkdir("Conversations/Audio/" + str(init_of_session))
 WAVE_OUTPUT_FILENAME = "Conversations/Audio/" + str(init_of_session) + "/subjectOutput_t_id_"
 WAVE_OUTPUT_BOT_FILENAME = "Conversations/Audio/" + str(init_of_session) + "/botOutput_t_id_"
 
-ROOT_TO_OMNIVERSE = "C:/Users/demos/AppData/Local/ov/pkg/audio2face-2021.3.3/exts/omni.audio2face.player/omni/audio2face/player/scripts/streaming_server"
+ROOT_TO_OMNIVERSE = config_dict["ROOT_TO_OMNIVERSE"]
 AUDIO_NAME = "/audio_bot_aws.wav"
 OMNIVERSE_AVATAR = "/audio2face/player_instance"
 # Parameters
@@ -56,10 +75,12 @@ OMNIVERSE_AVATAR = "/audio2face/player_instance"
 # /World/audio2face/player_streaming_instance_01
 # /World/audio2face/player_streaming_instance
 
-OUTPUT_FILE_IN_WAVE = "audio_bot_aws.wav" # WAV format Output file  name
+OUTPUT_FILE_IN_WAVE = "audio_bot_aws.wav"  # WAV format Output file  name
 NATIVE_LENGUAGE = "es"
 
-# ### Initial message ###
+# #######################
+# ### INITIAL MESSAGE ###
+# #######################
 
 initial_message = "Como te llamas?"
 counter = 0
@@ -106,7 +127,7 @@ try:
                 print("*** Recording ***")
                 frames = []
                 for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-                    data = stream.read(CHUNK, exception_on_overflow = False)
+                    data = stream.read(CHUNK, exception_on_overflow=False)
                     frames.append(data)
                 print("*** Done recording ***")
 
@@ -114,7 +135,7 @@ try:
                 stream.close()
                 p.terminate()
 
-                wf = wave.open(WAVE_OUTPUT_FILENAME + str(ct_voice_id)+".wav", 'wb')
+                wf = wave.open(WAVE_OUTPUT_FILENAME + str(ct_voice_id) + ".wav", 'wb')
                 wf.setnchannels(CHANNELS)
                 wf.setsampwidth(p.get_sample_size(FORMAT))
                 wf.setframerate(RATE)
@@ -122,10 +143,10 @@ try:
                 wf.close()
 
                 r = sr.Recognizer()
-                with sr.AudioFile(WAVE_OUTPUT_FILENAME + str(ct_voice_id)+".wav") as source:
+                with sr.AudioFile(WAVE_OUTPUT_FILENAME + str(ct_voice_id) + ".wav") as source:
                     audio = r.record(source)
 
-                spanish_text = r.recognize_google(audio, language=NATIVE_LENGUAGE+"-EU")
+                spanish_text = r.recognize_google(audio, language=NATIVE_LENGUAGE + "-EU")
                 ct_voice_id += 1
 
             elif CHAT_MODE == "write":
@@ -135,6 +156,7 @@ try:
 
             else:
                 print("Please select between 'write' or 'voice' method")
+                break
 
             print("Your input message", spanish_text)
 
@@ -143,16 +165,16 @@ try:
 
         t_str, t_unix, _ = ute.get_current_time()
         bot_result_list.append({
-            "SubjectId": subject_id
+            "SubjectId": subject_id,
             "SubjectName": subject_name,
             "TimeStr": t_str,
             "UnixTimestamp": t_unix,
             "Source": "Person",
             "Message": spanish_text,
-            "Mode": mode
+            "Mode": CHAT_MODE,
         })
         df_to_save = pd.DataFrame(bot_result_list)
-        df_to_save.to_excel("Conversations/Conv_"+str(init_of_session)+".xlsx", index=False)
+        df_to_save.to_excel("Conversations/Conv_" + str(init_of_session) + ".xlsx", index=False)
 
         # ###################
         # ### TRANSLATION ###
@@ -166,20 +188,22 @@ try:
         # ### BOT ###
         # ###########
 
+        t0 = time.time()
+
         response = openai.Completion.create(
-          engine="davinci",
-          prompt=message,
-          temperature=0.9,
-          max_tokens=initial_tokens,
-          top_p=1,
-          frequency_penalty=0,
-          presence_penalty=0.6,
-          stop=["Human:"] 
+            engine="davinci",
+            prompt=global_message,
+            temperature=0.9,
+            max_tokens=INITIAL_TOKENS_OPENAI,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0.6,
+            stop=["Human:"]
         )
         bot_answer = response["choices"][0]["text"]
         bot_message = bot_answer.replace("Yolo:", "") if "Yolo:" in bot_answer else bot_answer
-        print("Time of the answer", np.round(time.time()-t0, 5), "s")
-        
+        print("Time of the answer", np.round(time.time() - t0, 5), "s")
+
         global_message += bot_start_sequence + " " + bot_message
 
         # ###################
@@ -187,51 +211,51 @@ try:
         # ###################
         # Here the message is translated from english to spanish.
 
-        x = google_translator.translate(bot_message, dest=NATIVE_LENGUAGE) 
-        bot_message_spanish = x.text 
-        
+        x = google_translator.translate(bot_message, dest=NATIVE_LENGUAGE)
+        bot_message_spanish = x.text
+
         t_str, t_unix, _ = ute.get_current_time()
         bot_result_list.append({
-            "SubjectId": subject_id
+            "SubjectId": subject_id,
             "SubjectName": subject_name,
             "TimeStr": t_str,
             "UnixTimestamp": t_unix,
             "Source": "Bot",
             "Message": bot_message_spanish,
-            "Mode": mode
+            "Mode": CHAT_MODE
         })
         df_to_save = pd.DataFrame(bot_result_list)
-        df_to_save.to_excel("Conversations/Conv_"+str(init_of_session)+".xlsx", index=False)
+        df_to_save.to_excel("Conversations/Conv_" + str(init_of_session) + ".xlsx", index=False)
 
         print("Bot message", bot_message_spanish)
 
         # #################
         # ### USING AWS ###
         # #################
-        RATE = 16000 # Polly supports 16000Hz and 8000Hz output for PCM format
+        RATE = 16000  # Polly supports 16000Hz and 8000Hz output for PCM format
         response = polly.synthesize_speech(
-            Text=bot_message_spanish, 
-            OutputFormat="pcm", 
+            Text=bot_message_spanish,
+            OutputFormat="pcm",
             VoiceId="Lucia",
             SampleRate=str(RATE),
             Engine="neural"
         )
-        
+
         # Initializing variables
-        CHANNELS = 1 # Polly's output is a mono audio stream
+        CHANNELS = 1  # Polly's output is a mono audio stream
+        WAV_SAMPLE_WIDTH_BYTES = 2  # Polly's output is a stream of 16-bits (2 bytes) samples
         FRAMES = []
-        WAV_SAMPLE_WIDTH_BYTES = 2 # Polly's output is a stream of 16-bits (2 bytes) samples
 
         # Processing the response to audio stream
         STREAM = response.get("AudioStream")
         FRAMES.append(STREAM.read())
 
-        WAVEFORMAT = wave.open(ROOT_TO_OMNI + "/" + OUTPUT_FILE_IN_WAVE, 'wb')
-        WAVEFORMAT.setnchannels(CHANNELS)
-        WAVEFORMAT.setsampwidth(WAV_SAMPLE_WIDTH_BYTES)
-        WAVEFORMAT.setframerate(RATE)
-        WAVEFORMAT.writeframes(b''.join(FRAMES))
-        WAVEFORMAT.close()
+        WAVE_FORMAT = wave.open(ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE, 'wb')
+        WAVE_FORMAT.setnchannels(CHANNELS)
+        WAVE_FORMAT.setsampwidth(WAV_SAMPLE_WIDTH_BYTES)
+        WAVE_FORMAT.setframerate(RATE)
+        WAVE_FORMAT.writeframes(b''.join(FRAMES))
+        WAVE_FORMAT.close()
 
         # #################
         # ### OMNIVERSE ###

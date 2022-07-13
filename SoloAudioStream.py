@@ -1,6 +1,10 @@
 import subprocess
+import json
 
-ROOT_TO_OMNIVERSE = "C:/Users/demos/AppData/Local/ov/pkg/audio2face-2021.3.3/exts/omni.audio2face.player/omni/audio2face/player/scripts/streaming_server"
+config_json = open('config.json')
+config_dict = json.load(config_json)
+
+ROOT_TO_OMNIVERSE = config_dict["ROOT_TO_OMNIVERSE"]
 
 call_to_omniverse = " python " + ROOT_TO_OMNIVERSE + "/my_test_client.py"
 

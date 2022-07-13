@@ -17,11 +17,13 @@ my_global_mssg = ''
 broker = "127.0.0.1" 
 port = 1883
 
-openai.api_key = "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"
+openai.api_key = ""
+
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
     client.subscribe("topic/person_to_bot")
+
 
 def on_message(client, userdata, msg):
     
