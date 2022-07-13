@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import subprocess
 # from datetime import datetime
@@ -58,10 +57,6 @@ RECORD_SECONDS = 8
 
 # Begin of the session
 _, _, init_of_session = ute.get_current_time()
-os.mkdir("Conversations/Audio/" + str(init_of_session))
-
-WAVE_OUTPUT_FILENAME = "Conversations/Audio/" + str(init_of_session) + "/subjectOutput_t_id_"
-WAVE_OUTPUT_BOT_FILENAME = "Conversations/Audio/" + str(init_of_session) + "/botOutput_t_id_"
 
 ROOT_TO_OMNIVERSE = config_dict["ROOT_TO_OMNIVERSE"]
 AUDIO_NAME = "/audio_bot_aws.wav"
@@ -107,6 +102,11 @@ global_message = "The following is a conversation with Yolo. Yolo is helpful, cr
 print("Please write your subject id")
 subject_id = input()
 
+PATH_TO_DATA = "Conversations/" + subject_id + "_" + str(init_of_session)
+os.mkdir(PATH_TO_DATA)
+os.mkdir(PATH_TO_DATA + "/Audios")
+WAVE_OUTPUT_FILENAME = PATH_TO_DATA + "/Audios/Subject_" + subject_id
+
 # SubjectName
 print("Please write your name")
 subject_name = input()
@@ -115,6 +115,7 @@ bot_result_list = []
 ct_voice_id = 0
 try:
     while True:
+        t_str_start, t_unix_start, _ = ute.get_current_time()
         if counter > 0:
             if CHAT_MODE == "voice":
                 p = pyaudio.PyAudio()
@@ -135,7 +136,7 @@ try:
                 stream.close()
                 p.terminate()
 
-                wf = wave.open(WAVE_OUTPUT_FILENAME + str(ct_voice_id) + ".wav", 'wb')
+                wf = wave.open(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav", 'wb')
                 wf.setnchannels(CHANNELS)
                 wf.setsampwidth(p.get_sample_size(FORMAT))
                 wf.setframerate(RATE)
@@ -143,7 +144,7 @@ try:
                 wf.close()
 
                 r = sr.Recognizer()
-                with sr.AudioFile(WAVE_OUTPUT_FILENAME + str(ct_voice_id) + ".wav") as source:
+                with sr.AudioFile(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav") as source:
                     audio = r.record(source)
 
                 spanish_text = r.recognize_google(audio, language=NATIVE_LENGUAGE + "-EU")
@@ -163,18 +164,7 @@ try:
         else:
             spanish_text = initial_message
 
-        t_str, t_unix, _ = ute.get_current_time()
-        bot_result_list.append({
-            "SubjectId": subject_id,
-            "SubjectName": subject_name,
-            "TimeStr": t_str,
-            "UnixTimestamp": t_unix,
-            "Source": "Person",
-            "Message": spanish_text,
-            "Mode": CHAT_MODE,
-        })
-        df_to_save = pd.DataFrame(bot_result_list)
-        df_to_save.to_excel("Conversations/Conv_" + str(init_of_session) + ".xlsx", index=False)
+        t_str_end, t_unix_end, _ = ute.get_current_time()
 
         # ###################
         # ### TRANSLATION ###
@@ -184,11 +174,28 @@ try:
         person_message = x.text
         global_message += human_start_sequence + " " + person_message
 
+        bot_result_list.append({
+            "SubjectId": subject_id,
+            "SubjectName": subject_name,
+            "TimeInitStr": t_str_start,
+            "TimeEndStr": t_str_end,
+            "UnixTimestampInit": t_unix_start,
+            "UnixTimestampEnd": t_unix_end,
+            "Source": "Person",
+            "SpanishMessage": spanish_text,
+            "EnglishMessage": person_message,
+            "Mode": CHAT_MODE,
+        })
+        df_to_save = pd.DataFrame(bot_result_list)
+        df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
+
         # ###########
         # ### BOT ###
         # ###########
 
-        t0 = time.time()
+        t_str_start, t_unix_start, _ = ute.get_current_time()
+
+        # t0 = time.time()
 
         response = openai.Completion.create(
             engine="davinci",
@@ -202,9 +209,11 @@ try:
         )
         bot_answer = response["choices"][0]["text"]
         bot_message = bot_answer.replace("Yolo:", "") if "Yolo:" in bot_answer else bot_answer
-        print("Time of the answer", np.round(time.time() - t0, 5), "s")
+        # print("Time of the answer", np.round(time.time() - t0, 5), "s")
 
         global_message += bot_start_sequence + " " + bot_message
+
+        t_str_end, t_unix_end, _ = ute.get_current_time()
 
         # ###################
         # ### TRANSLATION ###
@@ -214,18 +223,21 @@ try:
         x = google_translator.translate(bot_message, dest=NATIVE_LENGUAGE)
         bot_message_spanish = x.text
 
-        t_str, t_unix, _ = ute.get_current_time()
         bot_result_list.append({
             "SubjectId": subject_id,
             "SubjectName": subject_name,
-            "TimeStr": t_str,
-            "UnixTimestamp": t_unix,
+            "TimeInitStr": t_str_start,
+            "TimeEndStr": t_str_end,
+            "UnixTimestampInit": t_unix_start,
+            "UnixTimestampEnd": t_unix_end,
             "Source": "Bot",
-            "Message": bot_message_spanish,
-            "Mode": CHAT_MODE
+            "SpanishMessage": spanish_text,
+            "EnglishMessage": person_message,
+            "Mode": CHAT_MODE,
         })
+
         df_to_save = pd.DataFrame(bot_result_list)
-        df_to_save.to_excel("Conversations/Conv_" + str(init_of_session) + ".xlsx", index=False)
+        df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
 
         print("Bot message", bot_message_spanish)
 

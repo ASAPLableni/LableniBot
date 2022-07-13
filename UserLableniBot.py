@@ -1,4 +1,4 @@
-import numpy as np
+# import numpy as np
 import pandas as pd
 import wave
 import time
@@ -98,7 +98,7 @@ initial_message = "Como te llamas?"
 counter = 0
 
 # Modes avaible: 'voice' or 'write'.
-mode = "write"
+CHAT_MODE = "write"
 
 # ##############
 # ### INPUTS ###
@@ -123,7 +123,7 @@ try:
     while True:
         t_str_start, t_unix_start, _ = ute.get_current_time()
         if counter > 0:
-            if mode == "voice":
+            if CHAT_MODE == "voice":
                 p = pyaudio.PyAudio()
                 stream = p.open(format=FORMAT,
                                 channels=CHANNELS,
@@ -156,7 +156,7 @@ try:
                 spanish_text = r.recognize_google(audio, language="es-EU")
                 ct_voice_id += 1
 
-            elif mode == "write":
+            elif CHAT_MODE == "write":
                 print("Write something....")
                 spanish_text = input()
                 print("* done recording")
@@ -191,7 +191,7 @@ try:
             "Source": "Person",
             "SpanishMessage": spanish_text,
             "EnglishMessage": person_message,
-            "Mode": mode
+            "Mode": CHAT_MODE,
         })
         df_to_save = pd.DataFrame(bot_result_list)
         df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
@@ -202,7 +202,7 @@ try:
 
         t_str_start, t_unix_start, _ = ute.get_current_time()
 
-        t0 = time.time()
+        # t0 = time.time()
         inputs = tokenizer([person_message], return_tensors='pt', device="cuda")
         inputs.to("cuda")
         reply_ids = model.generate(**inputs)
@@ -212,7 +212,7 @@ try:
         x = google_translator.translate(bot_message, dest='es')
         bot_message_spanish = x.text
 
-        print("Time of the Bot answer", np.round(time.time() - t0, 5), "s")
+        # print("Time of the Bot answer", np.round(time.time() - t0, 5), "s")
 
         t_str_end, t_unix_end, _ = ute.get_current_time()
 
@@ -226,7 +226,7 @@ try:
             "Source": "Bot",
             "SpanishMessage": bot_message_spanish,
             "EnglishMessage": bot_message,
-            "Mode": mode
+            "Mode": CHAT_MODE,
         })
         df_to_save = pd.DataFrame(bot_result_list)
         df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)

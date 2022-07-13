@@ -80,8 +80,8 @@ def get_mahalanobis_dist(x_arr, centers=None):
     if centers is None:
         centers = np.mean(x_arr, axis=0)
     cov = np.cov(x_arr.astype(float).T)
-    inv_covmat = sp.linalg.inv(cov)
-    left_term = np.dot(x_arr - centers, inv_covmat)
+    inv_covariance_matrix = sp.linalg.inv(cov)
+    left_term = np.dot(x_arr - centers, inv_covariance_matrix)
     mahal = np.dot(left_term, (x_arr - centers).T)
 
     return mahal.diagonal()

@@ -1,5 +1,8 @@
 {
 	"ROOT_TO_OMNIVERSE": "",
 	"AWS_ACCESS_KEY_ID": "",
-	"AWS_SECRET_ACCESS_KEY": ""
+	"AWS_SECRET_ACCESS_KEY": "",
+	"OPENAI_KEY": "",
+	"BROKER": "127.0.0.1",
+	"PORT": 1883
 }

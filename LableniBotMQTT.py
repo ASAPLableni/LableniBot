@@ -8,10 +8,11 @@ from transformers import BlenderbotTokenizer, BlenderbotForConditionalGeneration
 import paho.mqtt.client as mqtt
 
 from googletrans import Translator
+
 google_translator = Translator()
 
 my_global_mssg = ''
-broker = "127.0.0.1" 
+broker = "127.0.0.1"
 port = 1883
 
 torch.random.manual_seed(1)
@@ -38,13 +39,14 @@ model.to("cuda")
 
 print(" ***** Models loaded ***** ")
 
+
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
     client.subscribe("topic/person_to_bot")
 
+
 def on_message(client, userdata, msg):
-    
-    #t = datetime.now()
+    # t = datetime.now()
     global my_global_mssg
 
     message = msg.payload.decode()
@@ -53,8 +55,8 @@ def on_message(client, userdata, msg):
     client.disconnect()
     client.loop_stop()
 
+
 while True:
-    
     # ############################
     # ### RECIEVE MQTT MESSAGE ###
     # ############################
@@ -67,8 +69,8 @@ while True:
 
     print("Loop forever")
 
-    client.loop_forever()  
-    
+    client.loop_forever()
+
     # ###################
     # ### TRANSLATION ###
     # ###################
@@ -80,15 +82,15 @@ while True:
     person_message = x.text
 
     t0 = time.time()
-    
+
     inputs = tokenizer([person_message], return_tensors='pt', device="cuda")
     inputs.to("cuda")
     reply_ids = model.generate(**inputs)
-    
+
     bot_message_en = tokenizer.batch_decode(reply_ids)[0].replace("<s>", "").replace("</s>", "")
-    
-    print("Time of the answer", np.round(time.time()-t0, 5), "s")
-    
+
+    print("Time of the answer", np.round(time.time() - t0, 5), "s")
+
     # ###################
     # ### TRANSLATION ###
     # ###################
@@ -98,10 +100,10 @@ while True:
     bot_message_sp = x.text
 
     print("Message of the bot: ", bot_message_sp)
-    
+
     client = mqtt.Client()
     client.connect("127.0.0.1", 1883)
     client.publish("topic/bot_to_person", bot_message_sp)
     time.sleep(0.5)
-    
+
     my_global_mssg = ""
