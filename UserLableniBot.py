@@ -1,22 +1,29 @@
 import numpy as np
 import pandas as pd
-import wave, time, os, pyaudio, pyttsx3, sys, json, subprocess
+import wave
+import time
+import os
+import pyaudio
+# import pyttsx3
+# import sys
+import json
+import subprocess
 
 import speech_recognition as sr
 
 from googletrans import Translator
-google_translator = Translator()
-
-from gtts import gTTS 
 
 from transformers import BlenderbotTokenizer, BlenderbotForConditionalGeneration
 
 from boto3 import Session
-from botocore.exceptions import BotoCoreError, ClientError
-from contextlib import closing
-from tempfile import gettempdir
+# from botocore.exceptions import BotoCoreError, ClientError
+# from contextlib import closing
+# from tempfile import gettempdir
 
 import utils as ute
+
+# Initialize the translator model
+google_translator = Translator()
 
 print(" ***** Loading models... ***** ")
 
@@ -44,7 +51,7 @@ model.to("cuda")
 print(" ***** Models loaded ***** ")
 
 session = Session(
-    aws_access_key_id=config_dict["AWS_ACCESS_KEY_ID"], 
+    aws_access_key_id=config_dict["AWS_ACCESS_KEY_ID"],
     aws_secret_access_key=config_dict["AWS_SECRET_ACCESS_KEY"]
 )
 polly = session.client("polly", region_name='eu-west-1')
@@ -83,7 +90,7 @@ OMNIVERSE_AVATAR = "/audio2face/player_instance"
 # /World/audio2face/player_streaming_instance_01
 # /World/audio2face/player_streaming_instance
 
-OUTPUT_FILE_IN_WAVE = "audio_bot_aws.wav" #WAV format Output file  name
+OUTPUT_FILE_IN_WAVE = "audio_bot_aws.wav"  # WAV format Output file  name
 
 # Initial message 
 
@@ -127,7 +134,7 @@ try:
                 print("*** Recording ***")
                 frames = []
                 for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-                    data = stream.read(CHUNK, exception_on_overflow = False)
+                    data = stream.read(CHUNK, exception_on_overflow=False)
                     frames.append(data)
                 print("*** Done recording ***")
 
@@ -135,7 +142,7 @@ try:
                 stream.close()
                 p.terminate()
 
-                wf = wave.open(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id)+".wav", 'wb')
+                wf = wave.open(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav", 'wb')
                 wf.setnchannels(CHANNELS)
                 wf.setsampwidth(p.get_sample_size(FORMAT))
                 wf.setframerate(RATE)
@@ -143,7 +150,7 @@ try:
                 wf.close()
 
                 r = sr.Recognizer()
-                with sr.AudioFile(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id)+".wav") as source:
+                with sr.AudioFile(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav") as source:
                     audio = r.record(source)
 
                 spanish_text = r.recognize_google(audio, language="es-EU")
@@ -156,6 +163,7 @@ try:
 
             else:
                 print("Please select between 'write' or 'voice' method")
+                break
 
             print("Your input message", spanish_text)
 
@@ -186,7 +194,7 @@ try:
             "Mode": mode
         })
         df_to_save = pd.DataFrame(bot_result_list)
-        df_to_save.to_excel(PATH_TO_DATA + "/Conv_"+str(init_of_session)+".xlsx", index=False)
+        df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
 
         # ###########
         # ### BOT ###
@@ -198,14 +206,14 @@ try:
         inputs = tokenizer([person_message], return_tensors='pt', device="cuda")
         inputs.to("cuda")
         reply_ids = model.generate(**inputs)
-        
+
         # Bot answer
         bot_message = tokenizer.batch_decode(reply_ids)[0].replace("<s>", "").replace("</s>", "")
-        x = google_translator.translate(bot_message, dest='es') 
-        bot_message_spanish = x.text 
+        x = google_translator.translate(bot_message, dest='es')
+        bot_message_spanish = x.text
 
-        print("Time of the Bot answer", np.round(time.time()-t0, 5), "s")
-        
+        print("Time of the Bot answer", np.round(time.time() - t0, 5), "s")
+
         t_str_end, t_unix_end, _ = ute.get_current_time()
 
         bot_result_list.append({
@@ -221,26 +229,26 @@ try:
             "Mode": mode
         })
         df_to_save = pd.DataFrame(bot_result_list)
-        df_to_save.to_excel(PATH_TO_DATA + "/Conv_"+str(init_of_session)+".xlsx", index=False)
+        df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
 
         print("Bot message", bot_message_spanish)
 
         # #################
         # ### USING AWS ###
         # #################
-        RATE = 16000 # Polly supports 16000Hz and 8000Hz output for PCM format
+        RATE = 16000  # Polly supports 16000Hz and 8000Hz output for PCM format
         response = polly.synthesize_speech(
-            Text=bot_message_spanish, 
-            OutputFormat="pcm", 
+            Text=bot_message_spanish,
+            OutputFormat="pcm",
             VoiceId="Lucia",
             SampleRate=str(RATE),
             Engine="neural"
         )
-        
+
         # Initializing variables
-        CHANNELS = 1 # Polly's output is a mono audio stream
+        CHANNELS = 1  # Polly's output is a mono audio stream
+        WAV_SAMPLE_WIDTH_BYTES = 2  # Polly's output is a stream of 16-bits (2 bytes) samples
         FRAMES = []
-        WAV_SAMPLE_WIDTH_BYTES = 2 # Polly's output is a stream of 16-bits (2 bytes) samples
 
         # Processing the response to audio stream
         STREAM = response.get("AudioStream")
