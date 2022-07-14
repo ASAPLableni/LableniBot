@@ -80,7 +80,7 @@ _, _, init_of_session = ute.get_current_time()
 
 ROOT_TO_OMNIVERSE = config_dict["ROOT_TO_OMNIVERSE"]
 AUDIO_NAME = "/audio_bot_aws.wav"
-OMNIVERSE_AVATAR = "/audio2face/player_instance"
+OMNIVERSE_AVATAR = "/World/audio2face/player_streaming_instance"
 # Parameters
 # /World/Debra/ManRoot/Debra_gamebase_A2F/Debra_gamebase_A2F/CC_Game_Body/CC_Game_Body_result
 # /audio2face/player_instance
