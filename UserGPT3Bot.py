@@ -12,7 +12,6 @@ import speech_recognition as sr
 import openai
 
 from googletrans import Translator
-# from gtts import gTTS
 
 from boto3 import Session
 # from botocore.exceptions import BotoCoreError, ClientError

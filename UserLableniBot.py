@@ -1,7 +1,7 @@
 # import numpy as np
 import pandas as pd
 import wave
-import time
+# import time
 import os
 import pyaudio
 # import pyttsx3
@@ -41,8 +41,6 @@ MODEL_NAME = "facebook/blenderbot-3B"
 # MODEL_NAME = "microsoft/DialoGPT-large"
 # MODEL_NAME = "facebook/blenderbot-1B-distill"
 
-# tokenizer = BlenderbotTokenizer.from_pretrained(MODEL_NAME, local_files_only=True)
-# model = BlenderbotForConditionalGeneration.from_pretrained(MODEL_NAME, local_files_only=True)
 tokenizer = BlenderbotTokenizer.from_pretrained(MODEL_NAME)
 model = BlenderbotForConditionalGeneration.from_pretrained(MODEL_NAME)
 model.to("cuda")
@@ -254,12 +252,12 @@ try:
         STREAM = response.get("AudioStream")
         FRAMES.append(STREAM.read())
 
-        WAVEFORMAT = wave.open(ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE, 'wb')
-        WAVEFORMAT.setnchannels(CHANNELS)
-        WAVEFORMAT.setsampwidth(WAV_SAMPLE_WIDTH_BYTES)
-        WAVEFORMAT.setframerate(RATE)
-        WAVEFORMAT.writeframes(b''.join(FRAMES))
-        WAVEFORMAT.close()
+        WAVE_FORMAT = wave.open(ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE, 'wb')
+        WAVE_FORMAT.setnchannels(CHANNELS)
+        WAVE_FORMAT.setsampwidth(WAV_SAMPLE_WIDTH_BYTES)
+        WAVE_FORMAT.setframerate(RATE)
+        WAVE_FORMAT.writeframes(b''.join(FRAMES))
+        WAVE_FORMAT.close()
 
         # #################
         # ### OMNIVERSE ###
