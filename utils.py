@@ -16,7 +16,6 @@ def get_current_time():
     hour = "0" + hour if len(hour) == 1 else hour
 
     mint = str(t.minute)
-    if len(mint) == 1: mint = "0" + mint
     mint = "0" + mint if len(mint) == 1 else mint
 
     sec = str(t.second)
