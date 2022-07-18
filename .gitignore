@@ -5,4 +5,8 @@ Conversations/
 config.json
 __pycache__
 *.idea
+*.idea/
 *.ipynb_checkpoints/
+venv/
+venv2/
+*.csv
