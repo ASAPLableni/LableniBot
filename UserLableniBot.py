@@ -1,7 +1,7 @@
-# import numpy as np
+import numpy as np
 import pandas as pd
 import wave
-# import time
+import time
 import os
 import pyaudio
 # import pyttsx3
@@ -19,6 +19,8 @@ from boto3 import Session
 # from botocore.exceptions import BotoCoreError, ClientError
 # from contextlib import closing
 # from tempfile import gettempdir
+
+from pyannote.audio.pipelines import VoiceActivityDetection
 
 import utils as ute
 
@@ -64,7 +66,7 @@ CHUNK = 1024
 FORMAT = pyaudio.paInt16
 CHANNELS = 2
 RATE = 44100
-RECORD_SECONDS = 8
+RECORD_SECONDS = 30
 
 # #################
 # ### CONSTANTS ###
@@ -98,6 +100,17 @@ counter = 0
 # Modes avaible: 'voice' or 'write'.
 CHAT_MODE = "write"
 
+silence_detection_pipeline = VoiceActivityDetection(segmentation="pyannote/segmentation")
+HYPER_PARAMETERS = {
+  # onset/offset activation thresholds
+  "onset": 0.5, "offset": 0.5,
+  # remove speech regions shorter than that many seconds.
+  "min_duration_on": 0.0,
+  # fill non-speech regions shorter than that many seconds.
+  "min_duration_off": 0.0
+}
+silence_detection_pipeline.instantiate(HYPER_PARAMETERS)
+
 # ##############
 # ### INPUTS ###
 # ##############
@@ -114,6 +127,12 @@ WAVE_OUTPUT_FILENAME = PATH_TO_DATA + "/Audios/Subject_" + subject_id
 # SubjectName
 print("Please write your name")
 subject_name = input()
+
+TIME_TO_CUT = 1.5
+
+t0 = time.time()
+t0_start_talk = time.time()
+silence_th = 0
 
 bot_result_list = []
 ct_voice_id = 0
@@ -134,6 +153,31 @@ try:
                 for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
                     data = stream.read(CHUNK, exception_on_overflow=False)
                     frames.append(data)
+
+                    # Silence Detection module
+                    if time.time() - t0 > 1:
+
+                        wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
+                        wf.setnchannels(CHANNELS)
+                        wf.setsampwidth(p.get_sample_size(FORMAT))
+                        wf.setframerate(RATE)
+                        wf.writeframes(b''.join(frames))
+                        wf.close()
+
+                        vad = silence_detection_pipeline(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav")
+
+                        x = vad.get_timeline().segments_set_
+
+                        if len(x) > silence_th:
+                            last_time_talk = np.max([x_elt.end for x_elt in list(x)])
+                            if time.time() - (last_time_talk + t0_start_talk) > TIME_TO_CUT:
+                                break
+                            else:
+                                # silence_th += len(x)-1
+                                silence_th = len(x)
+
+                        t0 = time.time()
+
                 print("*** Done recording ***")
 
                 stream.stop_stream()
@@ -262,11 +306,13 @@ try:
         # #################
         # ### OMNIVERSE ###
         # #################
+        '''
         call_to_omniverse = " python " + ROOT_TO_OMNIVERSE + "/my_test_client.py "
 
         call_to_omniverse += " " + ROOT_TO_OMNIVERSE + AUDIO_NAME + " " + OMNIVERSE_AVATAR
         print(call_to_omniverse)
         subprocess.call(call_to_omniverse, shell=True)
+        '''
 
 except KeyboardInterrupt:
     pass
