@@ -130,10 +130,6 @@ subject_name = input()
 
 TIME_TO_CUT = 1.5
 
-t0 = time.time()
-t0_start_talk = time.time()
-silence_th = 0
-
 bot_result_list = []
 ct_voice_id = 0
 try:
@@ -141,6 +137,11 @@ try:
         t_str_start, t_unix_start, _ = ute.get_current_time()
         if counter > 0:
             if CHAT_MODE == "voice":
+
+                t0 = time.time()
+                t0_start_talk = time.time()
+                silence_th = 0
+
                 p = pyaudio.PyAudio()
                 stream = p.open(format=FORMAT,
                                 channels=CHANNELS,

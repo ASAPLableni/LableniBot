@@ -124,11 +124,7 @@ WAVE_OUTPUT_FILENAME = PATH_TO_DATA + "/Audios/Subject_" + subject_id
 print("Please write your name")
 subject_name = input()
 
-TIME_TO_CUT = 1.5
-
-t0 = time.time()
-t0_start_talk = time.time()
-silence_th = 0
+TIME_TO_CUT = 1
 
 bot_result_list = []
 ct_voice_id = 0
@@ -137,6 +133,11 @@ try:
         t_str_start, t_unix_start, _ = ute.get_current_time()
         if counter > 0:
             if CHAT_MODE == "voice":
+
+                t0 = time.time()
+                t0_start_talk = time.time()
+                silence_th = 0
+
                 p = pyaudio.PyAudio()
                 stream = p.open(format=FORMAT,
                                 channels=CHANNELS,
@@ -153,6 +154,8 @@ try:
                     # Silence Detection module
                     if time.time() - t0 > 1:
 
+                        # print("Hola", time.time() - t0_start_talk)
+
                         wf = wave.open(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav", 'wb')
                         wf.setnchannels(CHANNELS)
                         wf.setsampwidth(p.get_sample_size(FORMAT))
@@ -164,8 +167,9 @@ try:
 
                         x = vad.get_timeline().segments_set_
 
-                        if len(x) > silence_th:
+                        if len(x) > 0:
                             last_time_talk = np.max([x_elt.end for x_elt in list(x)])
+
                             if time.time() - (last_time_talk + t0_start_talk) > TIME_TO_CUT:
                                 break
                             else:
@@ -242,9 +246,7 @@ try:
         # ###########
 
         t_str_start, t_unix_start, _ = ute.get_current_time()
-
         # t0 = time.time()
-
         response = openai.Completion.create(
             engine="davinci",
             prompt=global_message,
@@ -256,6 +258,7 @@ try:
             stop=["Human:"]
         )
         bot_answer = response["choices"][0]["text"]
+        # bot_answer = "Yolo: Hello handsome man, how are you ?"
         bot_message = bot_answer.replace("Yolo:", "") if "Yolo:" in bot_answer else bot_answer
         # print("Time of the answer", np.round(time.time() - t0, 5), "s")
 
@@ -289,7 +292,6 @@ try:
 
         print("Bot message", bot_message_spanish)
 
-        '''
         # #################
         # ### USING AWS ###
         # #################
@@ -311,17 +313,42 @@ try:
         STREAM = response.get("AudioStream")
         FRAMES.append(STREAM.read())
 
-        WAVE_FORMAT = wave.open(ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE, 'wb')
+        # WAVE_FORMAT = wave.open(ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE, 'wb')
+        WAVE_FORMAT = wave.open(OUTPUT_FILE_IN_WAVE, 'wb')
         WAVE_FORMAT.setnchannels(CHANNELS)
         WAVE_FORMAT.setsampwidth(WAV_SAMPLE_WIDTH_BYTES)
         WAVE_FORMAT.setframerate(RATE)
         WAVE_FORMAT.writeframes(b''.join(FRAMES))
         WAVE_FORMAT.close()
 
+        # open a wav format music
+        f = wave.open(OUTPUT_FILE_IN_WAVE, "rb")
+        # instantiate PyAudio
+        p = pyaudio.PyAudio()
+        # open stream
+        stream = p.open(format=p.get_format_from_width(f.getsampwidth()),
+                        channels=f.getnchannels(),
+                        rate=f.getframerate(),
+                        output=True)
+        # read data
+        data = f.readframes(CHUNK)
+
+        # play stream
+        while data:
+            stream.write(data)
+            data = f.readframes(CHUNK)
+
+            # stop stream
+        stream.stop_stream()
+        stream.close()
+
+        # close PyAudio
+        p.terminate()
+
         # #################
         # ### OMNIVERSE ###
         # #################
-        
+        '''
         call_to_omniverse = " python " + ROOT_TO_OMNIVERSE + "/my_test_client.py "
 
         call_to_omniverse += " " + ROOT_TO_OMNIVERSE + AUDIO_NAME + " " + OMNIVERSE_AVATAR
