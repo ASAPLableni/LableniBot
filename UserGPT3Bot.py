@@ -11,6 +11,7 @@ import json
 # import sys
 import speech_recognition as sr
 import openai
+from transformers import pipeline
 
 from googletrans import Translator
 
@@ -42,6 +43,10 @@ polly = session.client("polly", region_name='eu-west-1')
 
 openai.api_key = config_dict["OPENAI_KEY"]
 INITIAL_TOKENS_OPENAI = 50
+
+summarizer_model = pipeline("summarization", model="facebook/bart-large-cnn")
+keep_last_summarizer = 3
+summarize_module = True
 
 # ### Some parameters ###
 # Time to wait until ask the user to repeat.
@@ -87,12 +92,12 @@ CHAT_MODE = "voice"
 
 silence_detection_pipeline = VoiceActivityDetection(segmentation="pyannote/segmentation")
 HYPER_PARAMETERS = {
-  # onset/offset activation thresholds
-  "onset": 0.5, "offset": 0.5,
-  # remove speech regions shorter than that many seconds.
-  "min_duration_on": 0.0,
-  # fill non-speech regions shorter than that many seconds.
-  "min_duration_off": 0.0
+    # onset/offset activation thresholds
+    "onset": 0.5, "offset": 0.5,
+    # remove speech regions shorter than that many seconds.
+    "min_duration_on": 0.0,
+    # fill non-speech regions shorter than that many seconds.
+    "min_duration_off": 0.0
 }
 silence_detection_pipeline.instantiate(HYPER_PARAMETERS)
 
@@ -100,12 +105,15 @@ silence_detection_pipeline.instantiate(HYPER_PARAMETERS)
 # ### INITIAL MESSAGE TO GPT3 ###
 # ###############################
 
-bot_start_sequence = "Yolo:"
+bot_start_sequence = "Maria:"
 human_start_sequence = "Human: "
 
-global_message = "The following is a conversation with Yolo. Yolo is helpful, creative, clever, and very friendly." \
-                 "Human: Hello, who are you?" \
-                 "Yolo: My name is Yolo. What is your name ? "
+global_message = '''
+The following is a conversation with Maria. Maria is helpful, creative, clever, and very friendly woman. Maria always 
+wants to ask questions to other people to talk a lot with them. 
+Human: Hello, who are you ?
+Maria: I am fine, thanks to ask.
+'''
 
 # ##############
 # ### INPUTS ###
@@ -224,7 +232,7 @@ try:
         person_message = x.text
         global_message += human_start_sequence + " " + person_message
 
-        print(global_message)
+        print("*** Global message *** ", global_message)
 
         bot_result_list.append({
             "SubjectId": subject_id,
@@ -237,9 +245,34 @@ try:
             "SpanishMessage": spanish_text,
             "EnglishMessage": person_message,
             "Mode": CHAT_MODE,
+            "Summary": ""
         })
         df_to_save = pd.DataFrame(bot_result_list)
         df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
+
+        # ##################
+        # ### SUMMARIZER ###
+        # ##################
+
+        if summarize_module:
+            df_cut = df_to_save.iloc[:(df_to_save.shape[0] - keep_last_summarizer)]
+            df_small = df_to_save.iloc[(df_to_save.shape[0] - keep_last_summarizer):]
+
+            all_text_paired = list(zip(df_cut["Source"].values, df_cut["EnglishMessage"].values))
+            text_list = [": ".join(text) for text in all_text_paired]
+            whole_text = " ".join(text_list)
+
+            if len(whole_text.split()) > 50:
+                answer = summarizer_model(whole_text, max_length=60, min_length=10)
+                whole_answer = answer[0]["summary_text"]
+                print("Summary model ...")
+
+                all_text_paired = list(zip(df_small["Source"].values, df_small["EnglishMessage"].values))
+                text_list = [": ".join(text) for text in all_text_paired]
+                whole_text_small = " ".join(text_list)
+
+                print("*** Summary ***", whole_answer + " " + whole_text_small)
+                global_message = whole_answer + " " + whole_text_small
 
         # ###########
         # ### BOT ###
@@ -255,11 +288,11 @@ try:
             top_p=1,
             frequency_penalty=0,
             presence_penalty=0.6,
-            stop=["Human:"]
+            stop=["Human:", "Person:", "Subject:"]
         )
         bot_answer = response["choices"][0]["text"]
-        # bot_answer = "Yolo: Hello handsome man, how are you ?"
-        bot_message = bot_answer.replace("Yolo:", "") if "Yolo:" in bot_answer else bot_answer
+        # bot_answer = "Maria: Hello handsome man, how are you ?"
+        bot_message = bot_answer.replace("Maria:", "") if "Maria:" in bot_answer else bot_answer
         # print("Time of the answer", np.round(time.time() - t0, 5), "s")
 
         global_message += bot_start_sequence + " " + bot_message
@@ -285,6 +318,7 @@ try:
             "SpanishMessage": spanish_text,
             "EnglishMessage": person_message,
             "Mode": CHAT_MODE,
+            "Summary": ""
         })
 
         df_to_save = pd.DataFrame(bot_result_list)
@@ -295,6 +329,7 @@ try:
         # #################
         # ### USING AWS ###
         # #################
+        bot_message_spanish = bot_message_spanish.replace(".", " ")
         RATE = 16000  # Polly supports 16000Hz and 8000Hz output for PCM format
         response = polly.synthesize_speech(
             Text=bot_message_spanish,
