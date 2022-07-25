@@ -98,7 +98,7 @@ initial_message = "Como te llamas?"
 counter = 0
 
 # Modes avaible: 'voice' or 'write'.
-CHAT_MODE = "write"
+CHAT_MODE = "voice"
 
 silence_detection_pipeline = VoiceActivityDetection(segmentation="pyannote/segmentation")
 HYPER_PARAMETERS = {
@@ -158,7 +158,7 @@ try:
                     # Silence Detection module
                     if time.time() - t0 > 1:
 
-                        wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
+                        wf = wave.open(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav", 'wb')
                         wf.setnchannels(CHANNELS)
                         wf.setsampwidth(p.get_sample_size(FORMAT))
                         wf.setframerate(RATE)
@@ -276,6 +276,9 @@ try:
 
         print("Bot message", bot_message_spanish)
 
+        time.sleep(5)
+
+        '''
         # #################
         # ### USING AWS ###
         # #################
@@ -307,7 +310,7 @@ try:
         # #################
         # ### OMNIVERSE ###
         # #################
-        '''
+        
         call_to_omniverse = " python " + ROOT_TO_OMNIVERSE + "/my_test_client.py "
 
         call_to_omniverse += " " + ROOT_TO_OMNIVERSE + AUDIO_NAME + " " + OMNIVERSE_AVATAR
