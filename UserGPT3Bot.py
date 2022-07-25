@@ -42,7 +42,7 @@ session = Session(
 polly = session.client("polly", region_name='eu-west-1')
 
 openai.api_key = config_dict["OPENAI_KEY"]
-INITIAL_TOKENS_OPENAI = 50
+INITIAL_TOKENS_OPENAI = 150
 
 summarizer_model = pipeline("summarization", model="facebook/bart-large-cnn")
 keep_last_summarizer = 3
@@ -67,7 +67,7 @@ _, _, init_of_session = ute.get_current_time()
 
 ROOT_TO_OMNIVERSE = config_dict["ROOT_TO_OMNIVERSE"]
 AUDIO_NAME = "/audio_bot_aws.wav"
-OMNIVERSE_AVATAR = "/audio2face/player_instance"
+OMNIVERSE_AVATAR =  "/World/audio_player_streaming" # "/audio2face/player_instance"
 # Parameters
 # /World/Debra/ManRoot/Debra_gamebase_A2F/Debra_gamebase_A2F/CC_Game_Body/CC_Game_Body_result
 # /audio2face/player_instance
@@ -132,7 +132,7 @@ WAVE_OUTPUT_FILENAME = PATH_TO_DATA + "/Audios/Subject_" + subject_id
 print("Please write your name")
 subject_name = input()
 
-TIME_TO_CUT = 1
+TIME_TO_CUT = 1.5
 
 bot_result_list = []
 ct_voice_id = 0
@@ -156,11 +156,11 @@ try:
                 print("*** Recording ***")
                 frames = []
                 for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-                    data = stream.read(CHUNK, exception_on_overflow=False)
+                    data = stream.read(CHUNK) # , exception_on_overflow=False
                     frames.append(data)
 
                     # Silence Detection module
-                    if time.time() - t0 > 1:
+                    if time.time() - t0 > 3:
 
                         # print("Hola", time.time() - t0_start_talk)
 
@@ -177,12 +177,11 @@ try:
 
                         if len(x) > 0:
                             last_time_talk = np.max([x_elt.end for x_elt in list(x)])
-
                             if time.time() - (last_time_talk + t0_start_talk) > TIME_TO_CUT:
                                 break
                             else:
-                                # silence_th += len(x)-1
-                                silence_th = len(x)
+                                silence_th += len(x)-1
+                                # silence_th = len(x)
 
                         t0 = time.time()
 
@@ -255,24 +254,27 @@ try:
         # ##################
 
         if summarize_module:
-            df_cut = df_to_save.iloc[:(df_to_save.shape[0] - keep_last_summarizer)]
-            df_small = df_to_save.iloc[(df_to_save.shape[0] - keep_last_summarizer):]
+        	n_data = df_to_save.shape[0]
+        	if n_data >= keep_last_summarizer+2:
 
-            all_text_paired = list(zip(df_cut["Source"].values, df_cut["EnglishMessage"].values))
-            text_list = [": ".join(text) for text in all_text_paired]
-            whole_text = " ".join(text_list)
+	            df_cut = df_to_save.iloc[:(n_data - keep_last_summarizer)]
+	            df_small = df_to_save.iloc[(n_data - keep_last_summarizer):]
 
-            if len(whole_text.split()) > 50:
-                answer = summarizer_model(whole_text, max_length=60, min_length=10)
-                whole_answer = answer[0]["summary_text"]
-                print("Summary model ...")
+	            all_text_paired = list(zip(df_cut["Source"].values, df_cut["EnglishMessage"].values))
+	            text_list = [": ".join(text) for text in all_text_paired]
+	            whole_text = " ".join(text_list)
 
-                all_text_paired = list(zip(df_small["Source"].values, df_small["EnglishMessage"].values))
-                text_list = [": ".join(text) for text in all_text_paired]
-                whole_text_small = " ".join(text_list)
+	            if len(whole_text.split()) > 50:
+	                answer = summarizer_model(whole_text, max_length=60, min_length=10)
+	                whole_answer = answer[0]["summary_text"]
+	                print("Summary model ...")
 
-                print("*** Summary ***", whole_answer + " " + whole_text_small)
-                global_message = whole_answer + " " + whole_text_small
+	                all_text_paired = list(zip(df_small["Source"].values, df_small["EnglishMessage"].values))
+	                text_list = [": ".join(text) for text in all_text_paired]
+	                whole_text_small = " ".join(text_list)
+
+	                print("*** Summary ***", whole_answer + " " + whole_text_small)
+	                global_message = whole_answer + " " + whole_text_small
 
         # ###########
         # ### BOT ###
@@ -281,7 +283,7 @@ try:
         t_str_start, t_unix_start, _ = ute.get_current_time()
         # t0 = time.time()
         response = openai.Completion.create(
-            engine="davinci",
+            engine="text-davinci-002",
             prompt=global_message,
             temperature=0.9,
             max_tokens=INITIAL_TOKENS_OPENAI,
@@ -291,8 +293,9 @@ try:
             stop=["Human:", "Person:", "Subject:"]
         )
         bot_answer = response["choices"][0]["text"]
-        # bot_answer = "Maria: Hello handsome man, how are you ?"
+        # bot_answer = "Maria: Hello man, how are you ?"
         bot_message = bot_answer.replace("Maria:", "") if "Maria:" in bot_answer else bot_answer
+        bot_message = bot_message.replace("Bot:", "") if "Bot:" in bot_message else bot_message
         # print("Time of the answer", np.round(time.time() - t0, 5), "s")
 
         global_message += bot_start_sequence + " " + bot_message
@@ -348,14 +351,15 @@ try:
         STREAM = response.get("AudioStream")
         FRAMES.append(STREAM.read())
 
-        # WAVE_FORMAT = wave.open(ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE, 'wb')
-        WAVE_FORMAT = wave.open(OUTPUT_FILE_IN_WAVE, 'wb')
+        WAVE_FORMAT = wave.open(ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE, 'wb')
+        # WAVE_FORMAT = wave.open(OUTPUT_FILE_IN_WAVE, 'wb')
         WAVE_FORMAT.setnchannels(CHANNELS)
         WAVE_FORMAT.setsampwidth(WAV_SAMPLE_WIDTH_BYTES)
         WAVE_FORMAT.setframerate(RATE)
         WAVE_FORMAT.writeframes(b''.join(FRAMES))
         WAVE_FORMAT.close()
 
+        '''
         # open a wav format music
         f = wave.open(OUTPUT_FILE_IN_WAVE, "rb")
         # instantiate PyAudio
@@ -379,17 +383,18 @@ try:
 
         # close PyAudio
         p.terminate()
+		'''
 
         # #################
         # ### OMNIVERSE ###
         # #################
-        '''
+        
         call_to_omniverse = " python " + ROOT_TO_OMNIVERSE + "/my_test_client.py "
 
         call_to_omniverse += " " + ROOT_TO_OMNIVERSE + AUDIO_NAME + " " + OMNIVERSE_AVATAR
         print(call_to_omniverse)
         subprocess.call(call_to_omniverse, shell=True)
-        '''
+        
 
 except KeyboardInterrupt:
     pass
