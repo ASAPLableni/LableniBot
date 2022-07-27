@@ -47,8 +47,8 @@ openai.api_key = config_dict["OPENAI_KEY"]
 INITIAL_TOKENS_OPENAI = 150
 
 summarizer_model = pipeline("summarization", model="facebook/bart-large-cnn")
-keep_last_summarizer = 6
-summarize_module = False
+keep_last_summarizer = 4
+summarize_module = True
 
 # ### Some parameters ###
 # Time to wait until ask the user to repeat.
@@ -110,12 +110,15 @@ silence_detection_pipeline.instantiate(HYPER_PARAMETERS)
 bot_start_sequence = "Maria:"
 human_start_sequence = "Human: "
 
-global_message = '''
+initial_context_message = '''
 The following is a conversation with Maria. Maria is helpful, creative, clever, and very friendly woman. Maria always 
 wants to ask questions to other people to talk a lot with them. 
+'''
+initial_dialogue_text = '''
 Human: Hello, who are you ?
 Maria: I am fine, thanks to ask.
 '''
+global_message = initial_context_message + "\n" + initial_dialogue_text
 
 # ##############
 # ### INPUTS ###
@@ -257,7 +260,7 @@ try:
 
         if summarize_module:
             n_data = df_to_save.shape[0]
-            if n_data >= 12:
+            if n_data >= 8:
 
                 df_cut = df_to_save.iloc[:(n_data - keep_last_summarizer)]
                 df_small = df_to_save.iloc[(n_data - keep_last_summarizer):]
@@ -266,8 +269,8 @@ try:
                 text_list = [": ".join(text) for text in all_text_paired]
                 whole_text = " ".join(text_list)
 
-                if len(whole_text.split()) > 80:
-                    answer = summarizer_model(whole_text, max_length=100, min_length=10)
+                if len(whole_text.split()) > 50:
+                    answer = summarizer_model(whole_text, max_length=60, min_length=10)
                     whole_answer = answer[0]["summary_text"]
                     print("Summary model ...")
 
@@ -276,7 +279,7 @@ try:
                     whole_text_small = " ".join(text_list)
 
                     print("*** Summary ***", whole_answer + " " + whole_text_small)
-                    global_message = whole_answer + " " + whole_text_small
+                    global_message = initial_context_message + " " + whole_answer + " " + whole_text_small
 
         # ###########
         # ### BOT ###
@@ -292,8 +295,8 @@ try:
             max_tokens=INITIAL_TOKENS_OPENAI,
             top_p=1,
             frequency_penalty=0,
-            presence_penalty=0.6,
-            stop=["Human:", "Person:", "Subject:"]
+            presence_penalty=0.2,
+            stop=["Human:", "Person:", "Subject:", "AI:"]
         )
         bot_answer = response["choices"][0]["text"]
         # bot_answer = "Maria: Hello man, how are. you ?"
@@ -301,7 +304,7 @@ try:
         bot_message = bot_message.replace("Bot:", "") if "Bot:" in bot_message else bot_message
         # print("Time of the answer", np.round(time.time() - t0, 5), "s")
 
-        if len(bot_message) < 3 or bot_message == "?" or bot_message == "!":
+        if len(bot_message) < 2 or bot_message == "?" or bot_message == "!":
             bot_message = "Can you repeat, please ?"
 
         global_message += bot_start_sequence + " " + bot_message
@@ -340,8 +343,8 @@ try:
         # #################
         bot_message_spanish_aws = bot_message_spanish
         bot_message_spanish_aws = bot_message_spanish_aws.replace("?", ".").replace("¿", ".")
-        bot_message_spanish_aws = bot_message_spanish_aws.replace('.', '<break time="1s"/>')
-        bot_message_spanish_aws = bot_message_spanish_aws.replace(',', '<break time="0.5s"/>')
+        bot_message_spanish_aws = bot_message_spanish_aws.replace('.', '<break time="0.6s"/>')
+        bot_message_spanish_aws = bot_message_spanish_aws.replace(',', '<break time="0.25s"/>')
         bot_message_spanish_aws = "<speak>"+bot_message_spanish_aws+"</speak>"
         RATE = 16000  # Polly supports 16000Hz and 8000Hz output for PCM format
         response = polly.synthesize_speech(
