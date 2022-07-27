@@ -12,6 +12,8 @@ import json
 import speech_recognition as sr
 import openai
 from transformers import pipeline
+from contextlib import closing
+from pydub import AudioSegment
 
 from googletrans import Translator
 
@@ -132,7 +134,7 @@ WAVE_OUTPUT_FILENAME = PATH_TO_DATA + "/Audios/Subject_" + subject_id
 print("Please write your name")
 subject_name = input()
 
-TIME_TO_CUT = 1.5
+TIME_TO_CUT = 1.2
 
 bot_result_list = []
 ct_voice_id = 0
@@ -255,7 +257,7 @@ try:
 
         if summarize_module:
             n_data = df_to_save.shape[0]
-            if n_data >= keep_last_summarizer + 2:
+            if n_data >= 12:
 
                 df_cut = df_to_save.iloc[:(n_data - keep_last_summarizer)]
                 df_small = df_to_save.iloc[(n_data - keep_last_summarizer):]
@@ -264,8 +266,8 @@ try:
                 text_list = [": ".join(text) for text in all_text_paired]
                 whole_text = " ".join(text_list)
 
-                if len(whole_text.split()) > 50:
-                    answer = summarizer_model(whole_text, max_length=60, min_length=10)
+                if len(whole_text.split()) > 80:
+                    answer = summarizer_model(whole_text, max_length=100, min_length=10)
                     whole_answer = answer[0]["summary_text"]
                     print("Summary model ...")
 
@@ -282,6 +284,7 @@ try:
 
         t_str_start, t_unix_start, _ = ute.get_current_time()
         # t0 = time.time()
+
         response = openai.Completion.create(
             engine="text-davinci-002",
             prompt=global_message,
@@ -293,7 +296,7 @@ try:
             stop=["Human:", "Person:", "Subject:"]
         )
         bot_answer = response["choices"][0]["text"]
-        # bot_answer = "Maria: Hello man, how are you ?"
+        # bot_answer = "Maria: Hello man, how are. you ?"
         bot_message = bot_answer.replace("Maria:", "") if "Maria:" in bot_answer else bot_answer
         bot_message = bot_message.replace("Bot:", "") if "Bot:" in bot_message else bot_message
         # print("Time of the answer", np.round(time.time() - t0, 5), "s")
@@ -336,19 +339,30 @@ try:
         # ### USING AWS ###
         # #################
         bot_message_spanish_aws = bot_message_spanish
+        bot_message_spanish_aws = bot_message_spanish_aws.replace("?", ".").replace("¿", ".")
         bot_message_spanish_aws = bot_message_spanish_aws.replace('.', '<break time="1s"/>')
         bot_message_spanish_aws = bot_message_spanish_aws.replace(',', '<break time="0.5s"/>')
         bot_message_spanish_aws = "<speak>"+bot_message_spanish_aws+"</speak>"
         RATE = 16000  # Polly supports 16000Hz and 8000Hz output for PCM format
         response = polly.synthesize_speech(
-            Text=bot_message_spanish,
-            OutputFormat="pcm",
+            Text=bot_message_spanish_aws,
+            OutputFormat="mp3",
             VoiceId="Lucia",
-            SampleRate=str(RATE),
+            # SampleRate=str(RATE),
             Engine="neural",
             TextType="ssml"
         )
 
+        with closing(response["AudioStream"]) as stream:
+            # output = os.path.join(gettempdir(), "speech.mp3")
+            with open(OUTPUT_FILE_IN_WAVE.replace(".wav", ".mp3"), "wb") as file:
+                file.write(stream.read())
+
+        # convert wav to mp3
+        sound = AudioSegment.from_mp3(OUTPUT_FILE_IN_WAVE.replace(".wav", ".mp3"))
+        sound.export(OUTPUT_FILE_IN_WAVE, format="wav")
+
+        '''
         # Initializing variables
         CHANNELS = 1  # Polly's output is a mono audio stream
         WAV_SAMPLE_WIDTH_BYTES = 2  # Polly's output is a stream of 16-bits (2 bytes) samples
@@ -358,15 +372,15 @@ try:
         STREAM = response.get("AudioStream")
         FRAMES.append(STREAM.read())
 
-        WAVE_FORMAT = wave.open(ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE, 'wb')
-        # WAVE_FORMAT = wave.open(OUTPUT_FILE_IN_WAVE, 'wb')
+        # WAVE_FORMAT = wave.open(ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE, 'wb')
+        WAVE_FORMAT = wave.open(OUTPUT_FILE_IN_WAVE, 'wb')
         WAVE_FORMAT.setnchannels(CHANNELS)
         WAVE_FORMAT.setsampwidth(WAV_SAMPLE_WIDTH_BYTES)
         WAVE_FORMAT.setframerate(RATE)
         WAVE_FORMAT.writeframes(b''.join(FRAMES))
         WAVE_FORMAT.close()
-
         '''
+
         # open a wav format music
         f = wave.open(OUTPUT_FILE_IN_WAVE, "rb")
         # instantiate PyAudio
@@ -390,17 +404,18 @@ try:
 
         # close PyAudio
         p.terminate()
-        '''
 
         # #################
         # ### OMNIVERSE ###
         # #################
 
+        '''
         call_to_omniverse = " python " + ROOT_TO_OMNIVERSE + "/my_test_client.py "
 
         call_to_omniverse += " " + ROOT_TO_OMNIVERSE + AUDIO_NAME + " " + OMNIVERSE_AVATAR
         print(call_to_omniverse)
         subprocess.call(call_to_omniverse, shell=True)
+        '''
 
 
 except KeyboardInterrupt:
