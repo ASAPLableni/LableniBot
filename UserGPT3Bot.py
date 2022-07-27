@@ -47,8 +47,8 @@ openai.api_key = config_dict["OPENAI_KEY"]
 INITIAL_TOKENS_OPENAI = 150
 
 summarizer_model = pipeline("summarization", model="facebook/bart-large-cnn")
-keep_last_summarizer = 3
-summarize_module = True
+keep_last_summarizer = 6
+summarize_module = False
 
 # ### Some parameters ###
 # Time to wait until ask the user to repeat.
