@@ -67,7 +67,7 @@ _, _, init_of_session = ute.get_current_time()
 
 ROOT_TO_OMNIVERSE = config_dict["ROOT_TO_OMNIVERSE"]
 AUDIO_NAME = "/audio_bot_aws.wav"
-OMNIVERSE_AVATAR =  "/World/audio_player_streaming" # "/audio2face/player_instance"
+OMNIVERSE_AVATAR = "/World/audio_player_streaming"  # "/audio2face/player_instance"
 # Parameters
 # /World/Debra/ManRoot/Debra_gamebase_A2F/Debra_gamebase_A2F/CC_Game_Body/CC_Game_Body_result
 # /audio2face/player_instance
@@ -156,7 +156,7 @@ try:
                 print("*** Recording ***")
                 frames = []
                 for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-                    data = stream.read(CHUNK) # , exception_on_overflow=False
+                    data = stream.read(CHUNK)  # , exception_on_overflow=False
                     frames.append(data)
 
                     # Silence Detection module
@@ -180,7 +180,7 @@ try:
                             if time.time() - (last_time_talk + t0_start_talk) > TIME_TO_CUT:
                                 break
                             else:
-                                silence_th += len(x)-1
+                                silence_th += len(x) - 1
                                 # silence_th = len(x)
 
                         t0 = time.time()
@@ -254,27 +254,27 @@ try:
         # ##################
 
         if summarize_module:
-        	n_data = df_to_save.shape[0]
-        	if n_data >= keep_last_summarizer+2:
+            n_data = df_to_save.shape[0]
+            if n_data >= keep_last_summarizer + 2:
 
-	            df_cut = df_to_save.iloc[:(n_data - keep_last_summarizer)]
-	            df_small = df_to_save.iloc[(n_data - keep_last_summarizer):]
+                df_cut = df_to_save.iloc[:(n_data - keep_last_summarizer)]
+                df_small = df_to_save.iloc[(n_data - keep_last_summarizer):]
 
-	            all_text_paired = list(zip(df_cut["Source"].values, df_cut["EnglishMessage"].values))
-	            text_list = [": ".join(text) for text in all_text_paired]
-	            whole_text = " ".join(text_list)
+                all_text_paired = list(zip(df_cut["Source"].values, df_cut["EnglishMessage"].values))
+                text_list = [": ".join(text) for text in all_text_paired]
+                whole_text = " ".join(text_list)
 
-	            if len(whole_text.split()) > 50:
-	                answer = summarizer_model(whole_text, max_length=60, min_length=10)
-	                whole_answer = answer[0]["summary_text"]
-	                print("Summary model ...")
+                if len(whole_text.split()) > 50:
+                    answer = summarizer_model(whole_text, max_length=60, min_length=10)
+                    whole_answer = answer[0]["summary_text"]
+                    print("Summary model ...")
 
-	                all_text_paired = list(zip(df_small["Source"].values, df_small["EnglishMessage"].values))
-	                text_list = [": ".join(text) for text in all_text_paired]
-	                whole_text_small = " ".join(text_list)
+                    all_text_paired = list(zip(df_small["Source"].values, df_small["EnglishMessage"].values))
+                    text_list = [": ".join(text) for text in all_text_paired]
+                    whole_text_small = " ".join(text_list)
 
-	                print("*** Summary ***", whole_answer + " " + whole_text_small)
-	                global_message = whole_answer + " " + whole_text_small
+                    print("*** Summary ***", whole_answer + " " + whole_text_small)
+                    global_message = whole_answer + " " + whole_text_small
 
         # ###########
         # ### BOT ###
@@ -297,6 +297,9 @@ try:
         bot_message = bot_answer.replace("Maria:", "") if "Maria:" in bot_answer else bot_answer
         bot_message = bot_message.replace("Bot:", "") if "Bot:" in bot_message else bot_message
         # print("Time of the answer", np.round(time.time() - t0, 5), "s")
+
+        if len(bot_message) < 3 or bot_message == "?" or bot_message == "!":
+            bot_message = "Can you repeat, please ?"
 
         global_message += bot_start_sequence + " " + bot_message
 
@@ -332,14 +335,18 @@ try:
         # #################
         # ### USING AWS ###
         # #################
-        bot_message_spanish = bot_message_spanish.replace(".", " ")
+        bot_message_spanish_aws = bot_message_spanish
+        bot_message_spanish_aws = bot_message_spanish_aws.replace('.', '<break time="1s"/>')
+        bot_message_spanish_aws = bot_message_spanish_aws.replace(',', '<break time="0.5s"/>')
+        bot_message_spanish_aws = "<speak>"+bot_message_spanish_aws+"</speak>"
         RATE = 16000  # Polly supports 16000Hz and 8000Hz output for PCM format
         response = polly.synthesize_speech(
             Text=bot_message_spanish,
             OutputFormat="pcm",
             VoiceId="Lucia",
             SampleRate=str(RATE),
-            Engine="neural"
+            Engine="neural",
+            TextType="ssml"
         )
 
         # Initializing variables
@@ -383,18 +390,18 @@ try:
 
         # close PyAudio
         p.terminate()
-		'''
+        '''
 
         # #################
         # ### OMNIVERSE ###
         # #################
-        
+
         call_to_omniverse = " python " + ROOT_TO_OMNIVERSE + "/my_test_client.py "
 
         call_to_omniverse += " " + ROOT_TO_OMNIVERSE + AUDIO_NAME + " " + OMNIVERSE_AVATAR
         print(call_to_omniverse)
         subprocess.call(call_to_omniverse, shell=True)
-        
+
 
 except KeyboardInterrupt:
     pass
