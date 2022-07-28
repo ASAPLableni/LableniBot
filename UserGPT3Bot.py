@@ -12,8 +12,8 @@ import json
 import speech_recognition as sr
 import openai
 from transformers import pipeline
-from contextlib import closing
-from pydub import AudioSegment
+# from contextlib import closing
+# from pydub import AudioSegment
 
 from googletrans import Translator
 
@@ -48,7 +48,7 @@ INITIAL_TOKENS_OPENAI = 150
 
 summarizer_model = pipeline("summarization", model="facebook/bart-large-cnn")
 keep_last_summarizer = 4
-summarize_module = True
+summarize_module = False
 
 # ### Some parameters ###
 # Time to wait until ask the user to repeat.
@@ -69,7 +69,7 @@ _, _, init_of_session = ute.get_current_time()
 
 ROOT_TO_OMNIVERSE = config_dict["ROOT_TO_OMNIVERSE"]
 AUDIO_NAME = "/audio_bot_aws.wav"
-OMNIVERSE_AVATAR = "/World/audio_player_streaming"  # "/audio2face/player_instance"
+OMNIVERSE_AVATAR = "/woman/audio_player_streaming"  # "/audio2face/player_instance" # "/woman/audio_player_streaming"
 # Parameters
 # /World/Debra/ManRoot/Debra_gamebase_A2F/Debra_gamebase_A2F/CC_Game_Body/CC_Game_Body_result
 # /audio2face/player_instance
@@ -85,9 +85,6 @@ NATIVE_LENGUAGE = "es"
 # #######################
 # ### INITIAL MESSAGE ###
 # #######################
-
-initial_message = "Como te llamas?"
-counter = 0
 
 # Modes avaible: 'voice' or 'write'.
 CHAT_MODE = "voice"
@@ -110,14 +107,24 @@ silence_detection_pipeline.instantiate(HYPER_PARAMETERS)
 bot_start_sequence = "Maria:"
 human_start_sequence = "Human: "
 
+# initial_context_message = '''
+# The following is a conversation with Maria. Maria is helpful, creative, clever, and very friendly woman. Maria always 
+# wants to ask questions to other people to talk a lot with them. 
+# '''
+# initial_dialogue_text = '''
+# Human: Hello, who are you ?
+# Maria: I am fine, thanks to ask.
+# '''
+
 initial_context_message = '''
-The following is a conversation with Maria. Maria is helpful, creative, clever, and very friendly woman. Maria always 
-wants to ask questions to other people to talk a lot with them. 
-'''
-initial_dialogue_text = '''
-Human: Hello, who are you ?
-Maria: I am fine, thanks to ask.
-'''
+Lo siguiente es una conversación con María. María es una mujer española de 30 años. Trabaja de azafata de vuelos.
+María es amable, amigable y le gusta hablar mucho. María le gusta preguntar y conocer cosas sobre las personas con las que habla. A María le gusta conversar.
+''' 
+initial_dialogue_text = ""
+
+initial_message = "Como te llamas?"
+counter = 0
+
 global_message = initial_context_message + "\n" + initial_dialogue_text
 
 # ##############
@@ -137,7 +144,7 @@ WAVE_OUTPUT_FILENAME = PATH_TO_DATA + "/Audios/Subject_" + subject_id
 print("Please write your name")
 subject_name = input()
 
-TIME_TO_CUT = 1.2
+TIME_TO_CUT = 1
 
 bot_result_list = []
 ct_voice_id = 0
@@ -232,9 +239,11 @@ try:
         # ### TRANSLATION ###
         # ###################
         # Here the message is translated from spanish to english.
-        x = google_translator.translate(spanish_text)
-        person_message = x.text
-        global_message += human_start_sequence + " " + person_message
+        # x = google_translator.translate(spanish_text)
+        # person_message = x.text + " ."
+        # global_message += human_start_sequence + " " + person_message
+
+        global_message += human_start_sequence + " " + spanish_text + " ."
 
         print("*** Global message *** ", global_message)
 
@@ -247,7 +256,7 @@ try:
             "UnixTimestampEnd": t_unix_end,
             "Source": "Person",
             "SpanishMessage": spanish_text,
-            "EnglishMessage": person_message,
+            # "EnglishMessage": person_message,
             "Mode": CHAT_MODE,
             "Summary": ""
         })
@@ -295,7 +304,7 @@ try:
             max_tokens=INITIAL_TOKENS_OPENAI,
             top_p=1,
             frequency_penalty=0,
-            presence_penalty=0.2,
+            presence_penalty=0.9,
             stop=["Human:", "Person:", "Subject:", "AI:"]
         )
         bot_answer = response["choices"][0]["text"]
@@ -316,8 +325,9 @@ try:
         # ###################
         # Here the message is translated from english to spanish.
 
-        x = google_translator.translate(bot_message, dest=NATIVE_LENGUAGE)
-        bot_message_spanish = x.text
+        # x = google_translator.translate(bot_message, dest=NATIVE_LENGUAGE)
+        # bot_message_spanish = x.text
+        bot_message_spanish = bot_message
 
         bot_result_list.append({
             "SubjectId": subject_id,
@@ -328,7 +338,7 @@ try:
             "UnixTimestampEnd": t_unix_end,
             "Source": "Bot",
             "SpanishMessage": spanish_text,
-            "EnglishMessage": person_message,
+            # "EnglishMessage": person_message,
             "Mode": CHAT_MODE,
             "Summary": ""
         })
@@ -343,19 +353,20 @@ try:
         # #################
         bot_message_spanish_aws = bot_message_spanish
         bot_message_spanish_aws = bot_message_spanish_aws.replace("?", ".").replace("¿", ".")
-        bot_message_spanish_aws = bot_message_spanish_aws.replace('.', '<break time="0.6s"/>')
-        bot_message_spanish_aws = bot_message_spanish_aws.replace(',', '<break time="0.25s"/>')
-        bot_message_spanish_aws = "<speak>"+bot_message_spanish_aws+"</speak>"
+        # bot_message_spanish_aws = bot_message_spanish_aws.replace('.', '<break time="0.6s"/>')
+        # bot_message_spanish_aws = bot_message_spanish_aws.replace(',', '<break time="0.25s"/>')
+        # bot_message_spanish_aws = "<speak>"+bot_message_spanish_aws+"</speak>"
         RATE = 16000  # Polly supports 16000Hz and 8000Hz output for PCM format
         response = polly.synthesize_speech(
             Text=bot_message_spanish_aws,
-            OutputFormat="mp3",
-            VoiceId="Lucia",
-            # SampleRate=str(RATE),
+            OutputFormat="pcm",
+            VoiceId= 'Lucia', # "Lucia",
+            SampleRate=str(RATE),
             Engine="neural",
-            TextType="ssml"
+            # TextType="ssml"
         )
 
+        '''
         with closing(response["AudioStream"]) as stream:
             # output = os.path.join(gettempdir(), "speech.mp3")
             with open(OUTPUT_FILE_IN_WAVE.replace(".wav", ".mp3"), "wb") as file:
@@ -364,8 +375,7 @@ try:
         # convert wav to mp3
         sound = AudioSegment.from_mp3(OUTPUT_FILE_IN_WAVE.replace(".wav", ".mp3"))
         sound.export(OUTPUT_FILE_IN_WAVE, format="wav")
-
-        '''
+		'''
         # Initializing variables
         CHANNELS = 1  # Polly's output is a mono audio stream
         WAV_SAMPLE_WIDTH_BYTES = 2  # Polly's output is a stream of 16-bits (2 bytes) samples
@@ -375,15 +385,15 @@ try:
         STREAM = response.get("AudioStream")
         FRAMES.append(STREAM.read())
 
-        # WAVE_FORMAT = wave.open(ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE, 'wb')
-        WAVE_FORMAT = wave.open(OUTPUT_FILE_IN_WAVE, 'wb')
+        WAVE_FORMAT = wave.open(ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE, 'wb')
+        # WAVE_FORMAT = wave.open(OUTPUT_FILE_IN_WAVE, 'wb')
         WAVE_FORMAT.setnchannels(CHANNELS)
         WAVE_FORMAT.setsampwidth(WAV_SAMPLE_WIDTH_BYTES)
         WAVE_FORMAT.setframerate(RATE)
         WAVE_FORMAT.writeframes(b''.join(FRAMES))
         WAVE_FORMAT.close()
-        '''
 
+        '''
         # open a wav format music
         f = wave.open(OUTPUT_FILE_IN_WAVE, "rb")
         # instantiate PyAudio
@@ -407,19 +417,18 @@ try:
 
         # close PyAudio
         p.terminate()
+		'''
 
         # #################
         # ### OMNIVERSE ###
         # #################
 
-        '''
         call_to_omniverse = " python " + ROOT_TO_OMNIVERSE + "/my_test_client.py "
 
         call_to_omniverse += " " + ROOT_TO_OMNIVERSE + AUDIO_NAME + " " + OMNIVERSE_AVATAR
+        # call_to_omniverse += " " + OUTPUT_FILE_IN_WAVE.replace(".wav", ".mp3") + " " + OMNIVERSE_AVATAR
         print(call_to_omniverse)
         subprocess.call(call_to_omniverse, shell=True)
-        '''
-
 
 except KeyboardInterrupt:
     pass
