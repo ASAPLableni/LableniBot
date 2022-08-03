@@ -1,6 +1,7 @@
 *.bat
 Roots.txt
 Conversations/
+Documents/
 Videos/
 *.wav
 config.json
@@ -9,6 +10,5 @@ __pycache__
 *.idea/
 *.ipynb_checkpoints/
 venv/
-venv2/
 *.csv
 *.mp3

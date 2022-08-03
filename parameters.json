@@ -1,0 +1,8 @@
+{
+	"TIME_TO_CUT": 0.8,
+    "INITIAL_TOKENS_OPENAI": 150,
+    "SUMMARIZE_MODULE": false,
+    "TRANSLATION_MODULE": false,
+    "OMNIVERSE_MODULE": false,
+    "OMNIVERSE_AVATAR": "/woman/audio_player_streaming"
+}

@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import subprocess
-# from datetime import datetime
 import wave
 import time
 import os
@@ -12,8 +11,8 @@ import json
 import speech_recognition as sr
 import openai
 from transformers import pipeline
-# from contextlib import closing
-# from pydub import AudioSegment
+from contextlib import closing
+from pydub import AudioSegment
 
 from googletrans import Translator
 
@@ -26,14 +25,26 @@ from pyannote.audio.pipelines import VoiceActivityDetection
 
 import utils as ute
 
-# Initialize the translator model
-google_translator = Translator()
-
 print(" ***** Models loaded ***** ")
+
+# ######################################
+# ### Opening PARAMETERS CONFIG file ###
+# ######################################
+
+parameters_json = open('parameters.json')
+parameters_dict = json.load(parameters_json)
+
+SUMMARIZE_MODULE = parameters_dict["SUMMARIZE_MODULE"]
+TRANSLATION_MODULE = parameters_dict["TRANSLATION_MODULE"]
+OMNIVERSE_MODULE = parameters_dict["OMNIVERSE_MODULE"]
+OMNIVERSE_MODULE = parameters_dict["OMNIVERSE_MODULE"]
+
+INITIAL_TOKENS_OPENAI = parameters_dict["INITIAL_TOKENS_OPENAI"]
 
 # ###########################
 # ### Opening CONFIG file ###
 # ###########################
+
 config_json = open('config.json')
 config_dict = json.load(config_json)
 
@@ -42,13 +53,23 @@ session = Session(
     aws_secret_access_key=config_dict["AWS_SECRET_ACCESS_KEY"]
 )
 polly = session.client("polly", region_name='eu-west-1')
-
 openai.api_key = config_dict["OPENAI_KEY"]
-INITIAL_TOKENS_OPENAI = 150
 
-summarizer_model = pipeline("summarization", model="facebook/bart-large-cnn")
-keep_last_summarizer = 4
-summarize_module = False
+# ###################
+# ### TRANSLATION ###
+# ###################
+
+if TRANSLATION_MODULE:
+    # Initialize the translator model
+    google_translator = Translator()
+
+# ################################
+# ### SUMMARIZATION PARAMETERS ###
+# ################################
+
+if SUMMARIZE_MODULE:
+    summarizer_model = pipeline("summarization", model="facebook/bart-large-cnn")
+    keep_last_summarizer = 4
 
 # ### Some parameters ###
 # Time to wait until ask the user to repeat.
@@ -67,9 +88,12 @@ RECORD_SECONDS = 30
 # Begin of the session
 _, _, init_of_session = ute.get_current_time()
 
-ROOT_TO_OMNIVERSE = config_dict["ROOT_TO_OMNIVERSE"]
 AUDIO_NAME = "/audio_bot_aws.wav"
-OMNIVERSE_AVATAR = "/woman/audio_player_streaming"  # "/audio2face/player_instance" # "/woman/audio_player_streaming"
+
+if OMNIVERSE_MODULE:
+    ROOT_TO_OMNIVERSE = config_dict["ROOT_TO_OMNIVERSE"]
+    OMNIVERSE_AVATAR = parameters_dict["OMNIVERSE_AVATAR"]
+
 # Parameters
 # /World/Debra/ManRoot/Debra_gamebase_A2F/Debra_gamebase_A2F/CC_Game_Body/CC_Game_Body_result
 # /audio2face/player_instance
@@ -118,8 +142,9 @@ human_start_sequence = "Human: "
 
 initial_context_message = '''
 Lo siguiente es una conversación con María. María es una mujer española de 30 años. Trabaja de azafata de vuelos.
-María es amable, amigable y le gusta hablar mucho. María le gusta preguntar y conocer cosas sobre las personas con las que habla. A María le gusta conversar.
-''' 
+María es amable, amigable y le gusta hablar mucho. María le gusta preguntar y conocer cosas sobre las personas con las 
+que habla. A María le gusta conversar.
+'''
 initial_dialogue_text = ""
 
 initial_message = "Como te llamas?"
@@ -144,7 +169,7 @@ WAVE_OUTPUT_FILENAME = PATH_TO_DATA + "/Audios/Subject_" + subject_id
 print("Please write your name")
 subject_name = input()
 
-TIME_TO_CUT = 1
+TIME_TO_CUT = parameters_dict["TIME_TO_CUT"]
 
 bot_result_list = []
 ct_voice_id = 0
@@ -238,12 +263,13 @@ try:
         # ###################
         # ### TRANSLATION ###
         # ###################
-        # Here the message is translated from spanish to english.
-        # x = google_translator.translate(spanish_text)
-        # person_message = x.text + " ."
-        # global_message += human_start_sequence + " " + person_message
-
-        global_message += human_start_sequence + " " + spanish_text + " ."
+        if TRANSLATION_MODULE:
+            # Here the message is translated from spanish to english.
+            x = google_translator.translate(spanish_text)
+            person_message = x.text + " ."
+            global_message += human_start_sequence + " " + person_message
+        else:
+            global_message += human_start_sequence + " " + spanish_text + " ."
 
         print("*** Global message *** ", global_message)
 
@@ -267,7 +293,7 @@ try:
         # ### SUMMARIZER ###
         # ##################
 
-        if summarize_module:
+        if SUMMARIZE_MODULE:
             n_data = df_to_save.shape[0]
             if n_data >= 8:
 
@@ -323,11 +349,13 @@ try:
         # ###################
         # ### TRANSLATION ###
         # ###################
-        # Here the message is translated from english to spanish.
 
-        # x = google_translator.translate(bot_message, dest=NATIVE_LENGUAGE)
-        # bot_message_spanish = x.text
-        bot_message_spanish = bot_message
+        if TRANSLATION_MODULE:
+            # Here the message is translated from english to spanish.
+            x = google_translator.translate(bot_message, dest=NATIVE_LENGUAGE)
+            bot_message_spanish = x.text
+        else:
+            bot_message_spanish = bot_message
 
         bot_result_list.append({
             "SubjectId": subject_id,
@@ -353,82 +381,78 @@ try:
         # #################
         bot_message_spanish_aws = bot_message_spanish
         bot_message_spanish_aws = bot_message_spanish_aws.replace("?", ".").replace("¿", ".")
-        # bot_message_spanish_aws = bot_message_spanish_aws.replace('.', '<break time="0.6s"/>')
-        # bot_message_spanish_aws = bot_message_spanish_aws.replace(',', '<break time="0.25s"/>')
-        # bot_message_spanish_aws = "<speak>"+bot_message_spanish_aws+"</speak>"
+        bot_message_spanish_aws = bot_message_spanish_aws.replace('.', '<break time="0.6s"/>')
+        bot_message_spanish_aws = bot_message_spanish_aws.replace(',', '<break time="0.25s"/>')
+        bot_message_spanish_aws = "<speak>" + bot_message_spanish_aws + "</speak>"
         RATE = 16000  # Polly supports 16000Hz and 8000Hz output for PCM format
         response = polly.synthesize_speech(
             Text=bot_message_spanish_aws,
-            OutputFormat="pcm",
-            VoiceId= 'Lucia', # "Lucia",
-            SampleRate=str(RATE),
+            OutputFormat="mp3",  # "pcm",
+            VoiceId='Lucia',  # "Lucia",
+            # SampleRate=str(RATE),
             Engine="neural",
-            # TextType="ssml"
+            TextType="ssml"
         )
 
-        '''
-        with closing(response["AudioStream"]) as stream:
+        with closing(response["AudioStream"]) as save_stream:
             # output = os.path.join(gettempdir(), "speech.mp3")
             with open(OUTPUT_FILE_IN_WAVE.replace(".wav", ".mp3"), "wb") as file:
-                file.write(stream.read())
+                file.write(save_stream.read())
 
-        # convert wav to mp3
+        # convert .mp3 to .wav
         sound = AudioSegment.from_mp3(OUTPUT_FILE_IN_WAVE.replace(".wav", ".mp3"))
         sound.export(OUTPUT_FILE_IN_WAVE, format="wav")
-		'''
-        # Initializing variables
-        CHANNELS = 1  # Polly's output is a mono audio stream
-        WAV_SAMPLE_WIDTH_BYTES = 2  # Polly's output is a stream of 16-bits (2 bytes) samples
-        FRAMES = []
-
-        # Processing the response to audio stream
-        STREAM = response.get("AudioStream")
-        FRAMES.append(STREAM.read())
-
-        WAVE_FORMAT = wave.open(ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE, 'wb')
-        # WAVE_FORMAT = wave.open(OUTPUT_FILE_IN_WAVE, 'wb')
-        WAVE_FORMAT.setnchannels(CHANNELS)
-        WAVE_FORMAT.setsampwidth(WAV_SAMPLE_WIDTH_BYTES)
-        WAVE_FORMAT.setframerate(RATE)
-        WAVE_FORMAT.writeframes(b''.join(FRAMES))
-        WAVE_FORMAT.close()
-
-        '''
-        # open a wav format music
-        f = wave.open(OUTPUT_FILE_IN_WAVE, "rb")
-        # instantiate PyAudio
-        p = pyaudio.PyAudio()
-        # open stream
-        stream = p.open(format=p.get_format_from_width(f.getsampwidth()),
-                        channels=f.getnchannels(),
-                        rate=f.getframerate(),
-                        output=True)
-        # read data
-        data = f.readframes(CHUNK)
-
-        # play stream
-        while data:
-            stream.write(data)
-            data = f.readframes(CHUNK)
-
-            # stop stream
-        stream.stop_stream()
-        stream.close()
-
-        # close PyAudio
-        p.terminate()
-		'''
 
         # #################
         # ### OMNIVERSE ###
         # #################
+        if OMNIVERSE_MODULE:
 
-        call_to_omniverse = " python " + ROOT_TO_OMNIVERSE + "/my_test_client.py "
+            # Initializing variables
+            CHANNELS = 1  # Polly's output is a mono audio stream
+            WAV_SAMPLE_WIDTH_BYTES = 2  # Polly's output is a stream of 16-bits (2 bytes) samples
+            FRAMES = []
 
-        call_to_omniverse += " " + ROOT_TO_OMNIVERSE + AUDIO_NAME + " " + OMNIVERSE_AVATAR
-        # call_to_omniverse += " " + OUTPUT_FILE_IN_WAVE.replace(".wav", ".mp3") + " " + OMNIVERSE_AVATAR
-        print(call_to_omniverse)
-        subprocess.call(call_to_omniverse, shell=True)
+            # Processing the response to audio stream
+            STREAM = response.get("AudioStream")
+            FRAMES.append(STREAM.read())
+
+            WAVE_FORMAT = wave.open(ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE, 'wb')
+            WAVE_FORMAT.setnchannels(CHANNELS)
+            WAVE_FORMAT.setsampwidth(WAV_SAMPLE_WIDTH_BYTES)
+            WAVE_FORMAT.setframerate(RATE)
+            WAVE_FORMAT.writeframes(b''.join(FRAMES))
+            WAVE_FORMAT.close()
+
+            call_to_omniverse = " python " + ROOT_TO_OMNIVERSE + "/my_test_client.py "
+            call_to_omniverse += " " + ROOT_TO_OMNIVERSE + AUDIO_NAME + " " + OMNIVERSE_AVATAR
+            # call_to_omniverse += " " + OUTPUT_FILE_IN_WAVE.replace(".wav", ".mp3") + " " + OMNIVERSE_AVATAR
+            print(call_to_omniverse)
+            subprocess.call(call_to_omniverse, shell=True)
+        else:
+            # open a wav format music
+            f = wave.open(OUTPUT_FILE_IN_WAVE, "rb")
+            # instantiate PyAudio
+            p = pyaudio.PyAudio()
+            # open stream
+            stream = p.open(format=p.get_format_from_width(f.getsampwidth()),
+                            channels=f.getnchannels(),
+                            rate=f.getframerate(),
+                            output=True)
+            # read data
+            data = f.readframes(CHUNK)
+
+            # play stream
+            while data:
+                stream.write(data)
+                data = f.readframes(CHUNK)
+
+                # stop stream
+            stream.stop_stream()
+            stream.close()
+
+            # close PyAudio
+            p.terminate()
 
 except KeyboardInterrupt:
     pass
