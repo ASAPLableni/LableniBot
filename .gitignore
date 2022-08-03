@@ -1,6 +1,7 @@
 *.bat
 Roots.txt
 Conversations/
+Videos/
 *.wav
 config.json
 __pycache__
