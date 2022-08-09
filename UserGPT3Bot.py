@@ -13,6 +13,7 @@ import openai
 from transformers import pipeline
 from contextlib import closing
 from pydub import AudioSegment
+from google.cloud import speech
 
 from googletrans import Translator
 
@@ -54,6 +55,9 @@ session = Session(
 )
 polly = session.client("polly", region_name='eu-west-1')
 openai.api_key = config_dict["OPENAI_KEY"]
+
+GOOGLE_ROOT = config_dict["GOOGLE_ROOT"]
+google_client = speech.SpeechClient.from_service_account_json(GOOGLE_ROOT)
 
 # ###################
 # ### TRANSLATION ###
@@ -128,8 +132,8 @@ silence_detection_pipeline.instantiate(HYPER_PARAMETERS)
 # ### INITIAL MESSAGE TO GPT3 ###
 # ###############################
 
-bot_start_sequence = "Maria:"
-human_start_sequence = "Human: "
+BOT_START_SEQUENCE = parameters_dict["BOT_START_SEQUENCE"]
+HUMAN_START_SEQUENCE = parameters_dict["HUMAN_START_SEQUENCE"]
 
 # initial_context_message = '''
 # The following is a conversation with Maria. Maria is helpful, creative, clever, and very friendly woman. Maria always 
@@ -143,11 +147,11 @@ human_start_sequence = "Human: "
 initial_context_message = '''
 Lo siguiente es una conversación con María. María es una mujer española de 30 años. Trabaja de azafata de vuelos.
 María es amable, amigable y le gusta hablar mucho. María le gusta preguntar y conocer cosas sobre las personas con las 
-que habla. A María le gusta conversar.
+que habla. A María le gusta conversar y hacer muchas preguntas.
 '''
 initial_dialogue_text = ""
 
-initial_message = "Como te llamas?"
+initial_message = "Como te llamas ?"
 counter = 0
 
 global_message = initial_context_message + "\n" + initial_dialogue_text
@@ -235,11 +239,27 @@ try:
                 wf.writeframes(b''.join(frames))
                 wf.close()
 
-                r = sr.Recognizer()
-                with sr.AudioFile(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav") as source:
-                    audio = r.record(source)
+                # r = sr.Recognizer()
+                # with sr.AudioFile(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav") as source:
+                #     audio = r.record(source)
 
-                spanish_text = r.recognize_google(audio, language=NATIVE_LENGUAGE + "-EU")
+                speech_file = WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav"
+                with open(speech_file, "rb") as audio_file:
+                    content = audio_file.read()
+
+                audio = speech.RecognitionAudio(content=content)
+                config = speech.RecognitionConfig(
+                    encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+                    # sample_rate_hertz=44100,
+                    language_code=NATIVE_LENGUAGE + "-EU",
+                    audio_channel_count=2,
+                    enable_separate_recognition_per_channel=True,
+                    enable_automatic_punctuation=True
+                )
+                response = google_client.recognize(config=config, audio=audio)
+                spanish_text = response.results[0].alternatives[0].transcript
+
+                # spanish_text = r.recognize_google(audio, language=NATIVE_LENGUAGE + "-EU")
                 ct_voice_id += 1
 
             elif CHAT_MODE == "write":
@@ -266,10 +286,10 @@ try:
         if TRANSLATION_MODULE:
             # Here the message is translated from spanish to english.
             x = google_translator.translate(spanish_text)
-            person_message = x.text + " ."
-            global_message += human_start_sequence + " " + person_message
+            person_message = x.text + " .\n"
+            global_message += HUMAN_START_SEQUENCE + " " + person_message
         else:
-            global_message += human_start_sequence + " " + spanish_text + " ."
+            global_message += HUMAN_START_SEQUENCE + " " + spanish_text + " .\n"
 
         print("*** Global message *** ", global_message)
 
@@ -284,7 +304,7 @@ try:
             "SpanishMessage": spanish_text,
             # "EnglishMessage": person_message,
             "Mode": CHAT_MODE,
-            "Summary": ""
+            "GlobalMessage": global_message,
         })
         df_to_save = pd.DataFrame(bot_result_list)
         df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
@@ -323,6 +343,8 @@ try:
         t_str_start, t_unix_start, _ = ute.get_current_time()
         # t0 = time.time()
 
+        global_message += " " + BOT_START_SEQUENCE + " "
+
         response = openai.Completion.create(
             engine="text-davinci-002",
             prompt=global_message,
@@ -334,6 +356,8 @@ try:
             stop=["Human:", "Person:", "Subject:", "AI:"]
         )
         bot_answer = response["choices"][0]["text"]
+        print("Bot answer", bot_answer)
+
         # bot_answer = "Maria: Hello man, how are. you ?"
         bot_message = bot_answer.replace("Maria:", "") if "Maria:" in bot_answer else bot_answer
         bot_message = bot_message.replace("Bot:", "") if "Bot:" in bot_message else bot_message
@@ -342,7 +366,7 @@ try:
         if len(bot_message) < 2 or bot_message == "?" or bot_message == "!":
             bot_message = "Can you repeat, please ?"
 
-        global_message += bot_start_sequence + " " + bot_message
+        global_message += BOT_START_SEQUENCE + " " + bot_message
 
         t_str_end, t_unix_end, _ = ute.get_current_time()
 
@@ -365,10 +389,10 @@ try:
             "UnixTimestampInit": t_unix_start,
             "UnixTimestampEnd": t_unix_end,
             "Source": "Bot",
-            "SpanishMessage": spanish_text,
+            "SpanishMessage": bot_message_spanish,
             # "EnglishMessage": person_message,
             "Mode": CHAT_MODE,
-            "Summary": ""
+            "GlobalMessage": global_message,
         })
 
         df_to_save = pd.DataFrame(bot_result_list)

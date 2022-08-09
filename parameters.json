@@ -1,5 +1,7 @@
 {
-	"TIME_TO_CUT": 0.8,
+	"BOT_START_SEQUENCE": "Maria:",
+    "HUMAN_START_SEQUENCE": "Human: ",
+    "TIME_TO_CUT": 0.8,
     "INITIAL_TOKENS_OPENAI": 150,
     "SUMMARIZE_MODULE": false,
     "TRANSLATION_MODULE": false,
