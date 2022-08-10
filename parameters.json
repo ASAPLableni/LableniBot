@@ -5,6 +5,6 @@
     "INITIAL_TOKENS_OPENAI": 150,
     "SUMMARIZE_MODULE": false,
     "TRANSLATION_MODULE": false,
-    "OMNIVERSE_MODULE": false,
-    "OMNIVERSE_AVATAR": "/woman/audio_player_streaming"
+    "OMNIVERSE_MODULE": true,
+    "OMNIVERSE_AVATAR": "/Woman/audio_player_streaming"
 }
