@@ -8,7 +8,7 @@ import pyaudio
 import json
 # import pyttsx3
 # import sys
-import speech_recognition as sr
+# import speech_recognition as sr
 import openai
 from transformers import pipeline
 from contextlib import closing
@@ -37,7 +37,6 @@ parameters_dict = json.load(parameters_json)
 
 SUMMARIZE_MODULE = parameters_dict["SUMMARIZE_MODULE"]
 TRANSLATION_MODULE = parameters_dict["TRANSLATION_MODULE"]
-OMNIVERSE_MODULE = parameters_dict["OMNIVERSE_MODULE"]
 OMNIVERSE_MODULE = parameters_dict["OMNIVERSE_MODULE"]
 
 INITIAL_TOKENS_OPENAI = parameters_dict["INITIAL_TOKENS_OPENAI"]
