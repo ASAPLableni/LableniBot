@@ -13,3 +13,4 @@ venv/
 *.csv
 *.mp3
 google_api.json
+*.idea/

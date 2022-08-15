@@ -24,7 +24,7 @@ call_to_omniverse = " python " + ROOT_TO_OMNIVERSE + "/my_test_client.py"
 
 
 AUDIO_NAME = "AudioExamples/audio_bot_aws.wav"
-OMNIVERSE_AVATAR = "/World/audio_player_streaming"
+OMNIVERSE_AVATAR = "/Woman/audio_player_streaming"
 
 call_to_omniverse += " " + AUDIO_NAME + " " + OMNIVERSE_AVATAR
 print("Message to Omniverse ", call_to_omniverse)

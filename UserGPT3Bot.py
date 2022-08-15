@@ -247,7 +247,7 @@ try:
                     content = audio_file.read()
 
                 audio = speech.RecognitionAudio(content=content)
-                config = speech.RecognitionConfig(
+                google_config = speech.RecognitionConfig(
                     encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
                     # sample_rate_hertz=44100,
                     language_code=NATIVE_LENGUAGE + "-EU",
@@ -255,7 +255,7 @@ try:
                     enable_separate_recognition_per_channel=True,
                     enable_automatic_punctuation=True
                 )
-                response = google_client.recognize(config=config, audio=audio)
+                response = google_client.recognize(config=google_config, audio=audio)
                 spanish_text = response.results[0].alternatives[0].transcript
 
                 # spanish_text = r.recognize_google(audio, language=NATIVE_LENGUAGE + "-EU")
@@ -357,7 +357,7 @@ try:
         bot_answer = response["choices"][0]["text"]
         print("Bot answer", bot_answer)
 
-        # bot_answer = "Maria: Hello man, how are. you ?"
+        # bot_answer = "Maria: Hola, que tal estas ?"
         bot_message = bot_answer.replace("Maria:", "") if "Maria:" in bot_answer else bot_answer
         bot_message = bot_message.replace("Bot:", "") if "Bot:" in bot_message else bot_message
         # print("Time of the answer", np.round(time.time() - t0, 5), "s")
@@ -410,13 +410,14 @@ try:
         RATE = 16000  # Polly supports 16000Hz and 8000Hz output for PCM format
         response = polly.synthesize_speech(
             Text=bot_message_spanish_aws,
-            OutputFormat="mp3",  # "pcm",
+            OutputFormat="pcm",  # "pcm",
             VoiceId='Lucia',  # "Lucia",
             # SampleRate=str(RATE),
             Engine="neural",
             TextType="ssml"
         )
 
+        '''
         with closing(response["AudioStream"]) as save_stream:
             # output = os.path.join(gettempdir(), "speech.mp3")
             with open(OUTPUT_FILE_IN_WAVE.replace(".wav", ".mp3"), "wb") as file:
@@ -425,6 +426,7 @@ try:
         # convert .mp3 to .wav
         sound = AudioSegment.from_mp3(OUTPUT_FILE_IN_WAVE.replace(".wav", ".mp3"))
         sound.export(OUTPUT_FILE_IN_WAVE, format="wav")
+        '''
 
         # #################
         # ### OMNIVERSE ###
@@ -432,7 +434,7 @@ try:
         if OMNIVERSE_MODULE:
 
             # Initializing variables
-            CHANNELS = 1  # Polly's output is a mono audio stream
+            OMNI_CHANNELS = 1  # Polly's output is a mono audio stream
             WAV_SAMPLE_WIDTH_BYTES = 2  # Polly's output is a stream of 16-bits (2 bytes) samples
             FRAMES = []
 
@@ -441,18 +443,35 @@ try:
             FRAMES.append(STREAM.read())
 
             WAVE_FORMAT = wave.open(ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE, 'wb')
-            WAVE_FORMAT.setnchannels(CHANNELS)
+            WAVE_FORMAT.setnchannels(OMNI_CHANNELS)
             WAVE_FORMAT.setsampwidth(WAV_SAMPLE_WIDTH_BYTES)
             WAVE_FORMAT.setframerate(RATE)
             WAVE_FORMAT.writeframes(b''.join(FRAMES))
             WAVE_FORMAT.close()
 
+            # OMNIVERSE_AVATAR = "/Woman/audio_player_streaming"
             call_to_omniverse = " python " + ROOT_TO_OMNIVERSE + "/my_test_client.py "
-            call_to_omniverse += " " + ROOT_TO_OMNIVERSE + AUDIO_NAME + " " + OMNIVERSE_AVATAR
+            call_to_omniverse += " " + ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE + " " + OMNIVERSE_AVATAR
             # call_to_omniverse += " " + OUTPUT_FILE_IN_WAVE.replace(".wav", ".mp3") + " " + OMNIVERSE_AVATAR
             print(call_to_omniverse)
             subprocess.call(call_to_omniverse, shell=True)
         else:
+            # Initializing variables
+            OMNI_CHANNELS = 1  # Polly's output is a mono audio stream
+            WAV_SAMPLE_WIDTH_BYTES = 2  # Polly's output is a stream of 16-bits (2 bytes) samples
+            FRAMES = []
+
+            # Processing the response to audio stream
+            STREAM = response.get("AudioStream")
+            FRAMES.append(STREAM.read())
+
+            WAVE_FORMAT = wave.open(OUTPUT_FILE_IN_WAVE, 'wb')
+            WAVE_FORMAT.setnchannels(OMNI_CHANNELS)
+            WAVE_FORMAT.setsampwidth(WAV_SAMPLE_WIDTH_BYTES)
+            WAVE_FORMAT.setframerate(RATE)
+            WAVE_FORMAT.writeframes(b''.join(FRAMES))
+            WAVE_FORMAT.close()
+
             # open a wav format music
             f = wave.open(OUTPUT_FILE_IN_WAVE, "rb")
             # instantiate PyAudio
