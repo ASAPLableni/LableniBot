@@ -14,3 +14,4 @@ venv/
 *.mp3
 google_api.json
 *.idea/
+avoid_words.json
