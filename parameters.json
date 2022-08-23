@@ -1,5 +1,9 @@
 {
     "TIME_TO_CUT": 0.8,
+    "RECORD_SECONDS": 30,
+    "RATE": 44100,
+    "CHANNELS": 2,
+    "CHUNK": 1024,
     "INITIAL_TOKENS_OPENAI": 150,
     "SUMMARIZE_MODULE": false,
     "TRANSLATION_MODULE": false,

@@ -97,7 +97,6 @@ if SUMMARIZE_MODULE:
 # Begin of the session
 _, _, init_of_session = ute.get_current_time()
 
-AUDIO_NAME = "/audio_bot_aws.wav"
 OUTPUT_FILE_IN_WAVE = "audio_bot_aws.wav"  # WAV format Output file  name
 NATIVE_LENGUAGE = "es"
 
@@ -107,11 +106,11 @@ CHAT_MODE = "voice"
 # Time to wait until ask the user to repeat.
 waitTime = 15
 # Audio record parameters.
-CHUNK = 1024
+CHUNK = parameters_dict["CHUNK"]
 FORMAT = pyaudio.paInt16
-CHANNELS = 2
-RATE = 44100
-RECORD_SECONDS = 30
+CHANNELS = parameters_dict["CHANNELS"]
+RATE = parameters_dict["RATE"]
+RECORD_SECONDS = parameters_dict["RECORD_SECONDS"]
 
 # ########################
 # ### OMNIVERSE MODULE ###
@@ -182,9 +181,7 @@ try:
                     frames.append(data)
 
                     # Silence Detection module
-                    if time.time() - t0 > 3:
-
-                        # print("Hola", time.time() - t0_start_talk)
+                    if time.time() - t0 > 1.5:
 
                         wf = wave.open(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav", 'wb')
                         wf.setnchannels(CHANNELS)
