@@ -1,10 +1,12 @@
 {
-	"BOT_START_SEQUENCE": "Maria:",
-    "HUMAN_START_SEQUENCE": "Human: ",
     "TIME_TO_CUT": 0.8,
     "INITIAL_TOKENS_OPENAI": 150,
     "SUMMARIZE_MODULE": false,
     "TRANSLATION_MODULE": false,
     "OMNIVERSE_MODULE": true,
-    "OMNIVERSE_AVATAR": "/Woman/audio_player_streaming"
+    "OMNIVERSE_AVATAR": "/Woman/audio_player_streaming",
+    "BOT_NAME": "Maria",
+    "HUMAN_NAME": "Human",
+    "INITIAL_MESSAGE": "Como te llamas ?",
+    "CONTEXT_MESSAGE": "Lo siguiente es una conversación con María. \nMaría es una mujer española de 30 años que trabaja de azafata de vuelos. \nMaría es amable, amigable y le gusta hablar mucho. A María le gusta hacer muchas preguntas y conocer cosas sobre las personas con las que habla."
 }

@@ -19,21 +19,18 @@ from googletrans import Translator
 
 from boto3 import Session
 # from botocore.exceptions import BotoCoreError, ClientError
-# from contextlib import closing
 # from tempfile import gettempdir
 
 from pyannote.audio.pipelines import VoiceActivityDetection
 
 import utils as ute
 
-print(" ***** Models loaded ***** ")
-
 # ######################################
 # ### Opening PARAMETERS CONFIG file ###
 # ######################################
 
-parameters_json = open('parameters.json')
-parameters_dict = json.load(parameters_json)
+with open("parameters.json", "r", encoding='utf-8') as read_file:
+    parameters_dict = json.load(read_file)
 
 SUMMARIZE_MODULE = parameters_dict["SUMMARIZE_MODULE"]
 TRANSLATION_MODULE = parameters_dict["TRANSLATION_MODULE"]
@@ -55,12 +52,31 @@ session = Session(
 polly = session.client("polly", region_name='eu-west-1')
 openai.api_key = config_dict["OPENAI_KEY"]
 
+# ###########################
+# ### Opening GOOGLE file ###
+# ###########################
+
 GOOGLE_ROOT = config_dict["GOOGLE_ROOT"]
 google_client = speech.SpeechClient.from_service_account_json(GOOGLE_ROOT)
 
-# ###################
-# ### TRANSLATION ###
-# ###################
+# ###############################
+# ### SILENCE DETECTION MODEL ###
+# ###############################
+
+silence_detection_pipeline = VoiceActivityDetection(segmentation="pyannote/segmentation")
+HYPER_PARAMETERS = {
+    # onset/offset activation thresholds
+    "onset": 0.5, "offset": 0.5,
+    # remove speech regions shorter than that many seconds.
+    "min_duration_on": 0.0,
+    # fill non-speech regions shorter than that many seconds.
+    "min_duration_off": 0.0
+}
+silence_detection_pipeline.instantiate(HYPER_PARAMETERS)
+
+# ##########################
+# ### TRANSLATION MODULE ###
+# ##########################
 
 if TRANSLATION_MODULE:
     # Initialize the translator model
@@ -74,16 +90,6 @@ if SUMMARIZE_MODULE:
     summarizer_model = pipeline("summarization", model="facebook/bart-large-cnn")
     keep_last_summarizer = 4
 
-# ### Some parameters ###
-# Time to wait until ask the user to repeat.
-waitTime = 15
-# Audio record parameters. 
-CHUNK = 1024
-FORMAT = pyaudio.paInt16
-CHANNELS = 2
-RATE = 44100
-RECORD_SECONDS = 30
-
 # #################
 # ### CONSTANTS ###
 # #################
@@ -92,68 +98,44 @@ RECORD_SECONDS = 30
 _, _, init_of_session = ute.get_current_time()
 
 AUDIO_NAME = "/audio_bot_aws.wav"
+OUTPUT_FILE_IN_WAVE = "audio_bot_aws.wav"  # WAV format Output file  name
+NATIVE_LENGUAGE = "es"
+
+# Modes avaible: 'voice' or 'write'.
+CHAT_MODE = "voice"
+
+# Time to wait until ask the user to repeat.
+waitTime = 15
+# Audio record parameters.
+CHUNK = 1024
+FORMAT = pyaudio.paInt16
+CHANNELS = 2
+RATE = 44100
+RECORD_SECONDS = 30
+
+# ########################
+# ### OMNIVERSE MODULE ###
+# ########################
 
 if OMNIVERSE_MODULE:
     ROOT_TO_OMNIVERSE = config_dict["ROOT_TO_OMNIVERSE"]
     OMNIVERSE_AVATAR = parameters_dict["OMNIVERSE_AVATAR"]
 
-# Parameters
-# /World/Debra/ManRoot/Debra_gamebase_A2F/Debra_gamebase_A2F/CC_Game_Body/CC_Game_Body_result
-# /audio2face/player_instance
-# /World/charTransfer/mark
-# /World/audio2face/player_streaming_instance
-# audio2face/player_streaming_instance_03
-# /World/audio2face/player_streaming_instance_01
-# /World/audio2face/player_streaming_instance
-
-OUTPUT_FILE_IN_WAVE = "audio_bot_aws.wav"  # WAV format Output file  name
-NATIVE_LENGUAGE = "es"
-
-# #######################
-# ### INITIAL MESSAGE ###
-# #######################
-
-# Modes avaible: 'voice' or 'write'.
-CHAT_MODE = "voice"
-
-silence_detection_pipeline = VoiceActivityDetection(segmentation="pyannote/segmentation")
-HYPER_PARAMETERS = {
-    # onset/offset activation thresholds
-    "onset": 0.5, "offset": 0.5,
-    # remove speech regions shorter than that many seconds.
-    "min_duration_on": 0.0,
-    # fill non-speech regions shorter than that many seconds.
-    "min_duration_off": 0.0
-}
-silence_detection_pipeline.instantiate(HYPER_PARAMETERS)
-
 # ###############################
 # ### INITIAL MESSAGE TO GPT3 ###
 # ###############################
 
-BOT_START_SEQUENCE = parameters_dict["BOT_START_SEQUENCE"]
-HUMAN_START_SEQUENCE = parameters_dict["HUMAN_START_SEQUENCE"]
+BOT_NAME = parameters_dict["BOT_NAME"]
+BOT_START_SEQUENCE = BOT_NAME + ": "
 
-# initial_context_message = '''
-# The following is a conversation with Maria. Maria is helpful, creative, clever, and very friendly woman. Maria always 
-# wants to ask questions to other people to talk a lot with them. 
-# '''
-# initial_dialogue_text = '''
-# Human: Hello, who are you ?
-# Maria: I am fine, thanks to ask.
-# '''
+HUMAN_NAME = parameters_dict["HUMAN_NAME"]
+HUMAN_START_SEQUENCE = HUMAN_NAME + ": "
 
-initial_context_message = '''
-Lo siguiente es una conversación con María. María es una mujer española de 30 años. Trabaja de azafata de vuelos.
-María es amable, amigable y le gusta hablar mucho. María le gusta preguntar y conocer cosas sobre las personas con las 
-que habla. A María le gusta conversar y hacer muchas preguntas.
-'''
-initial_dialogue_text = ""
-
-initial_message = "Como te llamas ?"
+CONTEXT_MESSAGE = parameters_dict["CONTEXT_MESSAGE"]
+INITIAL_MESSAGE = parameters_dict["INITIAL_MESSAGE"]
 counter = 0
 
-global_message = initial_context_message + "\n" + initial_dialogue_text
+global_message = CONTEXT_MESSAGE + "\n"
 
 # ##############
 # ### INPUTS ###
@@ -273,7 +255,7 @@ try:
             print("Your input message", spanish_text)
 
         else:
-            spanish_text = initial_message
+            spanish_text = INITIAL_MESSAGE
 
         counter += 1
 
@@ -333,7 +315,7 @@ try:
                     whole_text_small = " ".join(text_list)
 
                     print("*** Summary ***", whole_answer + " " + whole_text_small)
-                    global_message = initial_context_message + " " + whole_answer + " " + whole_text_small
+                    global_message = CONTEXT_MESSAGE + " " + whole_answer + " " + whole_text_small
 
         # ###########
         # ### BOT ###
