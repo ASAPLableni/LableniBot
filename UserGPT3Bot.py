@@ -11,8 +11,8 @@ import json
 # import speech_recognition as sr
 import openai
 from transformers import pipeline
-from contextlib import closing
-from pydub import AudioSegment
+# from contextlib import closing
+# from pydub import AudioSegment
 from google.cloud import speech
 
 from googletrans import Translator
@@ -385,7 +385,9 @@ try:
         bot_message_spanish_aws = bot_message_spanish_aws.replace("?", ".").replace("¿", ".")
         bot_message_spanish_aws = bot_message_spanish_aws.replace('.', '<break time="0.6s"/>')
         bot_message_spanish_aws = bot_message_spanish_aws.replace(',', '<break time="0.25s"/>')
+        bot_message_spanish_aws = '<prosody rate="slow">' + bot_message_spanish_aws + '</prosody>'
         bot_message_spanish_aws = "<speak>" + bot_message_spanish_aws + "</speak>"
+
         RATE = 16000  # Polly supports 16000Hz and 8000Hz output for PCM format
         response = polly.synthesize_speech(
             Text=bot_message_spanish_aws,
