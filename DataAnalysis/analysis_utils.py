@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 import scipy.stats as stats
+import seaborn as sns
 
 from scipy.spatial.distance import pdist, squareform
 from sklearn import linear_model
@@ -75,7 +76,25 @@ def make_scatter_plot(df, x_feat, x_name, y_feat, y_name, alpha_th=0.6, fontsize
 
     plt.show()
 
-
+def make_binary_plot(data, x_feat, x_name, y_feat, y_name, violin_plot=False):
+    
+    group_list = [df_g[y_feat].tolist() for g, df_g in data.groupby(x_feat)]
+    _, pvalue = stats.f_oneway(*group_list)
+    
+    print("P-value", pvalue, "with significance", get_p_string(pvalue))
+    
+    plt.figure(figsize=(10, 5))
+    
+    if violin_plot:
+        sns.violinplot(data=data, x=x_feat, y=y_feat)
+    else:
+        sns.boxplot(data=data, x=x_feat, y=y_feat)
+        
+    plt.xlabel(x_name, fontsize=14)
+    plt.ylabel(y_name, fontsize=14)
+    plt.show()
+    
+    
 def get_mahalanobis_dist(x_arr, centers=None):
     if centers is None:
         centers = np.mean(x_arr, axis=0)
