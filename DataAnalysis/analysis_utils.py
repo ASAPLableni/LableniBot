@@ -104,3 +104,7 @@ def get_mahalanobis_dist(x_arr, centers=None):
     mahal = np.dot(left_term, (x_arr - centers).T)
 
     return mahal.diagonal()
+
+
+def cosine_similarity(vec1_norm, vec2_norm):
+    return np.sum(vec1_norm * vec2_norm)

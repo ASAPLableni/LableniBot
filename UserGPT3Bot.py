@@ -3,11 +3,12 @@ import numpy as np
 import subprocess
 import wave
 import time
-import os
 import pyaudio
+import os
 import json
+import sys
 # import pyttsx3
-# import sys
+
 # import speech_recognition as sr
 import openai
 from transformers import pipeline
@@ -29,20 +30,47 @@ import utils as ute
 # ### Opening PARAMETERS CONFIG file ###
 # ######################################
 
-with open("parameters.json", "r", encoding='utf-8') as read_file:
+root_to_parameters = sys.argv[1]  # 'LableniBotConfig/parameters_neutral.json'
+if root_to_parameters is None:
+    print("Please select a configuration of the Avatar through the different options:")
+    correct_options_dict = {}
+    for i_conf, conf in enumerate(os.listdir("LableniBotConfig")):
+        if "parameters" in conf:
+            print("Input ", i_conf, "Configuration ", conf)
+            correct_options_dict[str(i_conf)] = "LableniBotConfig/" + conf
+
+    print("Please introduce an input for your configuration")
+    conf_choose = str(input())
+
+    if conf_choose not in correct_options_dict.keys():
+        print("Due to bad configuration selection, parameters_neutral is selected")
+        root_to_parameters = 'LableniBotConfig/parameters_neutral.json'
+    else:
+        print("Configuration", correct_options_dict[conf_choose], " is selected")
+        root_to_parameters = correct_options_dict[conf_choose]
+
+with open(root_to_parameters, "r", encoding='utf-8') as read_file:
     parameters_dict = json.load(read_file)
 
 SUMMARIZE_MODULE = parameters_dict["SUMMARIZE_MODULE"]
 TRANSLATION_MODULE = parameters_dict["TRANSLATION_MODULE"]
 OMNIVERSE_MODULE = parameters_dict["OMNIVERSE_MODULE"]
 
+CONFIG_NAME = parameters_dict["CONFIG_NAME"]
 INITIAL_TOKENS_OPENAI = parameters_dict["INITIAL_TOKENS_OPENAI"]
+BOT_VOICE_ID = parameters_dict["BOT_VOICE_ID"]
+ENGINE_TYPE = parameters_dict["ENGINE_TYPE"]
+
+BOT_MODEL = parameters_dict["BOT_MODEL"]
+BOT_TEMPERATURE = parameters_dict["BOT_TEMPERATURE"]
+BOT_FREQUENCY_PENALTY = parameters_dict["BOT_FREQUENCY_PENALTY"]
+BOT_PRESENCE_PENALTY = parameters_dict["BOT_PRESENCE_PENALTY"]
 
 # ###########################
 # ### Opening CONFIG file ###
 # ###########################
 
-config_json = open('config.json')
+config_json = open("LableniBotConfig/config.json")
 config_dict = json.load(config_json)
 
 session = Session(
@@ -283,6 +311,7 @@ try:
             # "EnglishMessage": person_message,
             "Mode": CHAT_MODE,
             "GlobalMessage": global_message,
+            "ConfigName": CONFIG_NAME,
         })
         df_to_save = pd.DataFrame(bot_result_list)
         df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
@@ -324,15 +353,16 @@ try:
         global_message += " " + BOT_START_SEQUENCE + " "
 
         response = openai.Completion.create(
-            engine="text-davinci-002",
+            engine=BOT_MODEL,
             prompt=global_message,
-            temperature=0.9,
+            temperature=BOT_TEMPERATURE,
             max_tokens=INITIAL_TOKENS_OPENAI,
             top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0.9,
+            frequency_penalty=BOT_FREQUENCY_PENALTY,
+            presence_penalty=BOT_PRESENCE_PENALTY,
             stop=["Human:", "Person:", "Subject:", "AI:"]
         )
+
         bot_answer = response["choices"][0]["text"]
         print("Bot answer", bot_answer)
 
@@ -371,6 +401,7 @@ try:
             # "EnglishMessage": person_message,
             "Mode": CHAT_MODE,
             "GlobalMessage": global_message,
+            "ConfigName": CONFIG_NAME,
         })
 
         df_to_save = pd.DataFrame(bot_result_list)
@@ -392,9 +423,9 @@ try:
         response = polly.synthesize_speech(
             Text=bot_message_spanish_aws,
             OutputFormat="pcm",  # "pcm",
-            VoiceId='Lucia',  # "Lucia",
+            VoiceId=BOT_VOICE_ID,  # "Lucia",
             # SampleRate=str(RATE),
-            Engine="neural",
+            Engine=ENGINE_TYPE,
             TextType="ssml"
         )
 
