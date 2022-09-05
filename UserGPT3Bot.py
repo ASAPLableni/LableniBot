@@ -30,21 +30,21 @@ import utils as ute
 # ### Opening PARAMETERS CONFIG file ###
 # ######################################
 
-root_to_parameters = sys.argv[1] if len(sys.argv) > 1 else None  # 'LableniBotConfig/parameters_neutral.json'
+root_to_parameters = sys.argv[1] if len(sys.argv) > 1 else None  # 'LableniBotConfig/Parameters/parameters_neutral.json'
 if root_to_parameters is None:
     print("Please select a configuration of the Avatar through the different options:")
     correct_options_dict = {}
-    for i_conf, conf in enumerate(os.listdir("LableniBotConfig")):
+    for i_conf, conf in enumerate(os.listdir("LableniBotConfig/Parameters")):
         if "parameters" in conf:
             print("Input ", i_conf, "Configuration ", conf)
-            correct_options_dict[str(i_conf)] = "LableniBotConfig/" + conf
+            correct_options_dict[str(i_conf)] = "LableniBotConfig/Parameters/" + conf
 
     print("Please introduce an input for your configuration")
     conf_choose = str(input())
 
     if conf_choose not in correct_options_dict.keys():
         print("Due to bad configuration selection, parameters_neutral is selected")
-        root_to_parameters = 'LableniBotConfig/parameters_neutral.json'
+        root_to_parameters = 'LableniBotConfig/Parameters/parameters_neutral.json'
     else:
         print("Configuration", correct_options_dict[conf_choose], " is selected")
         root_to_parameters = correct_options_dict[conf_choose]
@@ -65,6 +65,20 @@ BOT_MODEL = parameters_dict["BOT_MODEL"]
 BOT_TEMPERATURE = parameters_dict["BOT_TEMPERATURE"]
 BOT_FREQUENCY_PENALTY = parameters_dict["BOT_FREQUENCY_PENALTY"]
 BOT_PRESENCE_PENALTY = parameters_dict["BOT_PRESENCE_PENALTY"]
+
+# ### Initial message to de chatbot
+
+BOT_NAME = parameters_dict["BOT_NAME"]
+BOT_START_SEQUENCE = BOT_NAME + ": "
+
+HUMAN_NAME = parameters_dict["HUMAN_NAME"]
+HUMAN_START_SEQUENCE = HUMAN_NAME + ": "
+
+CONTEXT_MESSAGE = parameters_dict["CONTEXT_MESSAGE"]
+INITIAL_MESSAGE = parameters_dict["INITIAL_MESSAGE"]
+counter = 0
+
+global_message = CONTEXT_MESSAGE + "\n"
 
 # ###########################
 # ### Opening CONFIG file ###
@@ -147,22 +161,6 @@ RECORD_SECONDS = parameters_dict["RECORD_SECONDS"]
 if OMNIVERSE_MODULE:
     ROOT_TO_OMNIVERSE = config_dict["ROOT_TO_OMNIVERSE"]
     OMNIVERSE_AVATAR = parameters_dict["OMNIVERSE_AVATAR"]
-
-# ###############################
-# ### INITIAL MESSAGE TO GPT3 ###
-# ###############################
-
-BOT_NAME = parameters_dict["BOT_NAME"]
-BOT_START_SEQUENCE = BOT_NAME + ": "
-
-HUMAN_NAME = parameters_dict["HUMAN_NAME"]
-HUMAN_START_SEQUENCE = HUMAN_NAME + ": "
-
-CONTEXT_MESSAGE = parameters_dict["CONTEXT_MESSAGE"]
-INITIAL_MESSAGE = parameters_dict["INITIAL_MESSAGE"]
-counter = 0
-
-global_message = CONTEXT_MESSAGE + "\n"
 
 # ##############
 # ### INPUTS ###
@@ -367,7 +365,7 @@ try:
         print("Bot answer", bot_answer)
 
         # bot_answer = "Maria: Hola, que tal estas ?"
-        bot_message = bot_answer.replace("Maria:", "") if "Maria:" in bot_answer else bot_answer
+        bot_message = bot_answer.replace(BOT_NAME+":", "") if BOT_NAME+":" in bot_answer else bot_answer
         bot_message = bot_message.replace("Bot:", "") if "Bot:" in bot_message else bot_message
         # print("Time of the answer", np.round(time.time() - t0, 5), "s")
 
