@@ -30,7 +30,7 @@ import utils as ute
 # ### Opening PARAMETERS CONFIG file ###
 # ######################################
 
-root_to_parameters = sys.argv[1]  # 'LableniBotConfig/parameters_neutral.json'
+root_to_parameters = sys.argv[1] if len(sys.argv) > 1 else None  # 'LableniBotConfig/parameters_neutral.json'
 if root_to_parameters is None:
     print("Please select a configuration of the Avatar through the different options:")
     correct_options_dict = {}
