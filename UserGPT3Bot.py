@@ -183,6 +183,7 @@ TIME_TO_CUT = parameters_dict["TIME_TO_CUT"]
 
 bot_result_list = []
 ct_voice_id = 0
+spanish_text = None
 try:
     while True:
 
@@ -191,34 +192,34 @@ try:
         # ###########
 
         t_str_start, t_unix_start, _ = ute.get_current_time()
-        if counter > 0:
-
-            response = openai.Completion.create(
-                engine=BOT_MODEL,
-                prompt=GLOBAL_MESSAGE,
-                temperature=BOT_TEMPERATURE,
-                max_tokens=INITIAL_TOKENS_OPENAI,
-                top_p=1,
-                frequency_penalty=BOT_FREQUENCY_PENALTY,
-                presence_penalty=BOT_PRESENCE_PENALTY,
-                stop=["Human:", "Person:", "Subject:", "AI:"]
-            )
-
-            bot_answer = response["choices"][0]["text"]
+        if spanish_text is not None or spanish_text != "":
+            if counter > 0:
+                response = openai.Completion.create(
+                    engine=BOT_MODEL,
+                    prompt=GLOBAL_MESSAGE,
+                    temperature=BOT_TEMPERATURE,
+                    max_tokens=INITIAL_TOKENS_OPENAI,
+                    top_p=1,
+                    frequency_penalty=BOT_FREQUENCY_PENALTY,
+                    presence_penalty=BOT_PRESENCE_PENALTY,
+                    stop=["Human:", "Person:", "Subject:", "AI:"]
+                )
+                bot_answer = response["choices"][0]["text"]
+            else:
+                bot_answer = INITIAL_MESSAGE
         else:
-            bot_answer = INITIAL_MESSAGE
+            bot_message = "Puedes repetir, por favor ?"
 
         # bot_answer = "Maria: Hola, que tal estas ?"
         bot_message = bot_answer.replace(BOT_NAME + ":", "") if BOT_NAME + ":" in bot_answer else bot_answer
-        # print("Time of the answer", np.round(time.time() - t0, 5), "s")
+        bot_message = bot_message.replace("\n", "") if "\n" in bot_message else bot_message
 
-        if len(bot_message) < 2 or bot_message == "?" or bot_message == "!":
+        if len(bot_message) <= 2 or bot_message == "?" or bot_message == "!":
             bot_message = "Puedes repetir, por favor ?"
 
         bot_message = bot_message if bot_message[-1] == "." else bot_message + "."
         GLOBAL_MESSAGE += "\n" + BOT_START_SEQUENCE + " " + bot_message
-
-        print("*** Global message *** ", GLOBAL_MESSAGE)
+        print("*** Global message *** \n", GLOBAL_MESSAGE)
 
         t_str_end, t_unix_end, _ = ute.get_current_time()
 
@@ -251,8 +252,6 @@ try:
 
         df_to_save = pd.DataFrame(bot_result_list)
         df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
-
-        print("Bot message", bot_message_spanish)
 
         # #################
         # ### USING AWS ###
@@ -310,7 +309,7 @@ try:
             call_to_omniverse = " python " + ROOT_TO_OMNIVERSE + "/my_test_client.py "
             call_to_omniverse += " " + ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE + " " + OMNIVERSE_AVATAR
             # call_to_omniverse += " " + OUTPUT_FILE_IN_WAVE.replace(".wav", ".mp3") + " " + OMNIVERSE_AVATAR
-            print(call_to_omniverse)
+            # print(call_to_omniverse)
             subprocess.call(call_to_omniverse, shell=True)
         else:
             # Initializing variables
@@ -426,7 +425,10 @@ try:
                 enable_automatic_punctuation=True
             )
             response = google_client.recognize(config=google_config, audio=audio)
-            spanish_text = response.results[0].alternatives[0].transcript
+            if len(response.results) > 0:
+                spanish_text = response.results[0].alternatives[0].transcript
+            else:
+                spanish_text = ""
 
             # spanish_text = r.recognize_google(audio, language=NATIVE_LENGUAGE + "-EU")
             ct_voice_id += 1
@@ -434,13 +436,10 @@ try:
         elif CHAT_MODE == "write":
             print("Write something....")
             spanish_text = input()
-            print("* done recording")
 
         else:
             print("Please select between 'write' or 'voice' method")
             break
-
-        print("Your input message", spanish_text)
 
         t_str_end, t_unix_end, _ = ute.get_current_time()
 
@@ -457,6 +456,7 @@ try:
 
         person_message = person_message if person_message[-1] == "." else person_message + "."
         GLOBAL_MESSAGE += "\n" + HUMAN_START_SEQUENCE + " " + person_message
+        print("*** Global message *** \n", GLOBAL_MESSAGE)
 
         bot_result_list.append({
             "SubjectId": subject_id,
@@ -504,6 +504,9 @@ try:
                     GLOBAL_MESSAGE = CONTEXT_MESSAGE + " " + whole_answer + " " + whole_text_small
 
         counter += 1
+
+        if person_message == "Adiós" or person_message == "Hasta luego" or person_message == "Adios":
+            break
 
 except KeyboardInterrupt:
     pass
