@@ -7,6 +7,7 @@ import pyaudio
 import os
 import json
 import sys
+import random
 # import pyttsx3
 
 # import speech_recognition as sr
@@ -39,6 +40,7 @@ if root_to_parameters is None:
             print("Input ", i_conf, "Configuration ", conf)
             correct_options_dict[str(i_conf)] = "LableniBotConfig/Parameters/" + conf
 
+    print()
     print("Please introduce an input for your configuration")
     conf_choose = str(input())
 
@@ -132,6 +134,14 @@ if SUMMARIZE_MODULE:
     summarizer_model = pipeline("summarization", model="facebook/bart-large-cnn")
     keep_last_summarizer = 4
 
+# ########################
+# ### RANDOM QUESTIONS ###
+# ########################
+
+with open("LableniBotConfig/RandomQuestions.txt", "r", encoding='utf-8') as txt:
+    RANDOM_QUESTIONS = txt.readlines()
+RANDOM_QUESTIONS = [q.replace("\n", "") for q in RANDOM_QUESTIONS]
+
 # #################
 # ### CONSTANTS ###
 # #################
@@ -183,7 +193,9 @@ TIME_TO_CUT = parameters_dict["TIME_TO_CUT"]
 
 bot_result_list = []
 ct_voice_id = 0
-spanish_text = None
+spanish_text = " "
+random_question_label = False
+repeat_message_label = False
 try:
     while True:
 
@@ -192,8 +204,8 @@ try:
         # ###########
 
         t_str_start, t_unix_start, _ = ute.get_current_time()
-        if spanish_text is not None or spanish_text != "":
-            if counter > 0:
+        if spanish_text is not None and not repeat_message_label:
+            if counter > 0 and not random_question_label:
                 response = openai.Completion.create(
                     engine=BOT_MODEL,
                     prompt=GLOBAL_MESSAGE,
@@ -205,10 +217,14 @@ try:
                     stop=["Human:", "Person:", "Subject:", "AI:"]
                 )
                 bot_answer = response["choices"][0]["text"]
+            elif random_question_label:
+                bot_answer = random.choices(RANDOM_QUESTIONS)[0]
+                RANDOM_QUESTIONS = RANDOM_QUESTIONS.remove(bot_answer)
+                random_question_label = False
             else:
                 bot_answer = INITIAL_MESSAGE
         else:
-            bot_message = "Puedes repetir, por favor ?"
+            bot_answer = "Puedes repetir, por favor ? No te he entendido bien"
 
         # bot_answer = "Maria: Hola, que tal estas ?"
         bot_message = bot_answer.replace(BOT_NAME + ":", "") if BOT_NAME + ":" in bot_answer else bot_answer
@@ -425,10 +441,20 @@ try:
                 enable_automatic_punctuation=True
             )
             response = google_client.recognize(config=google_config, audio=audio)
+
             if len(response.results) > 0:
+                repeat_message_label = False
                 spanish_text = response.results[0].alternatives[0].transcript
+
+                vad = silence_detection_pipeline(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav")
+                x = vad.get_timeline().segments_set_
+                time_start_talking = list(x)[0].end
+
+                if time_start_talking > 3.5 and (t0 - t0_start_talk) - time_start_talking < 2:
+                    random_question_label = True
             else:
-                spanish_text = ""
+                spanish_text = " "
+                repeat_message_label = True
 
             # spanish_text = r.recognize_google(audio, language=NATIVE_LENGUAGE + "-EU")
             ct_voice_id += 1
