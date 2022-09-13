@@ -71,10 +71,10 @@ BOT_PRESENCE_PENALTY = parameters_dict["BOT_PRESENCE_PENALTY"]
 # ### Initial message to de chatbot
 
 BOT_NAME = parameters_dict["BOT_NAME"]
-BOT_START_SEQUENCE = BOT_NAME + ": "
+BOT_START_SEQUENCE = BOT_NAME + ":"
 
 HUMAN_NAME = parameters_dict["HUMAN_NAME"]
-HUMAN_START_SEQUENCE = HUMAN_NAME + ": "
+HUMAN_START_SEQUENCE = HUMAN_NAME + ":"
 
 CONTEXT_MESSAGE = parameters_dict["CONTEXT_MESSAGE"]
 INITIAL_MESSAGE = parameters_dict["INITIAL_MESSAGE"]
@@ -218,6 +218,8 @@ try:
                     stop=["Human:", "Person:", "Subject:", "AI:"]
                 )
                 bot_answer = response["choices"][0]["text"]
+                if len(bot_answer.split(":")) > 2:
+                    bot_answer = ":".join(bot_answer.split(":")[:2])
             elif random_question_label:
                 bot_answer = random.choices(RANDOM_QUESTIONS)[0]
                 RANDOM_QUESTIONS = RANDOM_QUESTIONS.remove(bot_answer)
@@ -226,6 +228,7 @@ try:
                 bot_answer = INITIAL_MESSAGE
         else:
             bot_answer = "Puedes repetir, por favor ? No te he entendido bien"
+            repeat_message_label = False
 
         # bot_answer = "Maria: Hola, que tal estas ?"
         bot_message = bot_answer.replace(BOT_NAME + ":", "") if BOT_NAME + ":" in bot_answer else bot_answer
@@ -234,7 +237,7 @@ try:
         if len(bot_message) <= 2 or bot_message == "?" or bot_message == "!":
             bot_message = "Puedes repetir, por favor ?"
 
-        bot_message = bot_message if bot_message[-1] == "." else bot_message + "."
+        bot_message = bot_message if bot_message[-1] in [".", "?", "!"] else bot_message + "."
         GLOBAL_MESSAGE += "\n" + BOT_START_SEQUENCE + " " + bot_message
         print("*** Global message *** \n", GLOBAL_MESSAGE)
 
@@ -449,9 +452,9 @@ try:
 
                 vad = silence_detection_pipeline(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav")
                 x = vad.get_timeline().segments_set_
-                time_start_talking = list(x)[0].end
+                time_start_talking = list(x)[0].start
 
-                if time_start_talking > 3.5 and (t0 - t0_start_talk) - time_start_talking < 2:
+                if time_start_talking > 3.5 and (t0 - t0_start_talk) - time_start_talking <= 1:
                     random_question_label = True
             else:
                 spanish_text = " "
@@ -481,7 +484,7 @@ try:
         else:
             person_message = spanish_text
 
-        person_message = person_message if person_message[-1] == "." else person_message + "."
+        person_message = person_message if person_message[-1] in [".", "?", "!"] else person_message + "."
         GLOBAL_MESSAGE += "\n" + HUMAN_START_SEQUENCE + " " + person_message
         print("*** Global message *** \n", GLOBAL_MESSAGE)
 
