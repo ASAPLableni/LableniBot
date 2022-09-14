@@ -399,7 +399,7 @@ try:
                 frames.append(data)
 
                 # Silence Detection module
-                if time.time() - t0 > 1.5:
+                if time.time() - t0 > 3:
 
                     wf = wave.open(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav", 'wb')
                     wf.setnchannels(CHANNELS)
