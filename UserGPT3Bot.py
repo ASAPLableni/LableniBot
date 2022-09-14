@@ -7,6 +7,7 @@ import pyaudio
 import os
 import json
 import sys
+import random
 # import pyttsx3
 
 # import speech_recognition as sr
@@ -39,6 +40,7 @@ if root_to_parameters is None:
             print("Input ", i_conf, "Configuration ", conf)
             correct_options_dict[str(i_conf)] = "LableniBotConfig/Parameters/" + conf
 
+    print()
     print("Please introduce an input for your configuration")
     conf_choose = str(input())
 
@@ -69,16 +71,16 @@ BOT_PRESENCE_PENALTY = parameters_dict["BOT_PRESENCE_PENALTY"]
 # ### Initial message to de chatbot
 
 BOT_NAME = parameters_dict["BOT_NAME"]
-BOT_START_SEQUENCE = BOT_NAME + ": "
+BOT_START_SEQUENCE = BOT_NAME + ":"
 
 HUMAN_NAME = parameters_dict["HUMAN_NAME"]
-HUMAN_START_SEQUENCE = HUMAN_NAME + ": "
+HUMAN_START_SEQUENCE = HUMAN_NAME + ":"
 
 CONTEXT_MESSAGE = parameters_dict["CONTEXT_MESSAGE"]
 INITIAL_MESSAGE = parameters_dict["INITIAL_MESSAGE"]
 counter = 0
 
-global_message = CONTEXT_MESSAGE + "\n"
+GLOBAL_MESSAGE = CONTEXT_MESSAGE + "\n"
 
 # ###########################
 # ### Opening CONFIG file ###
@@ -120,9 +122,9 @@ silence_detection_pipeline.instantiate(HYPER_PARAMETERS)
 # ### TRANSLATION MODULE ###
 # ##########################
 
-if TRANSLATION_MODULE:
-    # Initialize the translator model
-    google_translator = Translator()
+# if TRANSLATION_MODULE:
+# Initialize the translator model
+google_translator = Translator()
 
 # ################################
 # ### SUMMARIZATION PARAMETERS ###
@@ -131,6 +133,14 @@ if TRANSLATION_MODULE:
 if SUMMARIZE_MODULE:
     summarizer_model = pipeline("summarization", model="facebook/bart-large-cnn")
     keep_last_summarizer = 4
+
+# ########################
+# ### RANDOM QUESTIONS ###
+# ########################
+
+with open("LableniBotConfig/RandomQuestions.txt", "r", encoding='utf-8') as txt:
+    RANDOM_QUESTIONS = txt.readlines()
+RANDOM_QUESTIONS = [q.replace("\n", "") for q in RANDOM_QUESTIONS]
 
 # #################
 # ### CONSTANTS ###
@@ -183,196 +193,62 @@ TIME_TO_CUT = parameters_dict["TIME_TO_CUT"]
 
 bot_result_list = []
 ct_voice_id = 0
+spanish_text = " "
+random_question_label = False
+repeat_message_label = False
 try:
     while True:
-        t_str_start, t_unix_start, _ = ute.get_current_time()
-        if counter > 0:
-            if CHAT_MODE == "voice":
-
-                t0 = time.time()
-                t0_start_talk = time.time()
-                silence_th = 0
-
-                p = pyaudio.PyAudio()
-                stream = p.open(format=FORMAT,
-                                channels=CHANNELS,
-                                rate=RATE,
-                                input=True,
-                                frames_per_buffer=CHUNK)
-
-                print("*** Recording ***")
-                frames = []
-                for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-                    data = stream.read(CHUNK)  # , exception_on_overflow=False
-                    frames.append(data)
-
-                    # Silence Detection module
-                    if time.time() - t0 > 1.5:
-
-                        wf = wave.open(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav", 'wb')
-                        wf.setnchannels(CHANNELS)
-                        wf.setsampwidth(p.get_sample_size(FORMAT))
-                        wf.setframerate(RATE)
-                        wf.writeframes(b''.join(frames))
-                        wf.close()
-
-                        vad = silence_detection_pipeline(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav")
-
-                        x = vad.get_timeline().segments_set_
-
-                        if len(x) > 0:
-                            last_time_talk = np.max([x_elt.end for x_elt in list(x)])
-                            if time.time() - (last_time_talk + t0_start_talk) > TIME_TO_CUT:
-                                break
-                            else:
-                                silence_th += len(x) - 1
-                                # silence_th = len(x)
-
-                        t0 = time.time()
-
-                print("*** Done recording ***")
-
-                stream.stop_stream()
-                stream.close()
-                p.terminate()
-
-                wf = wave.open(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav", 'wb')
-                wf.setnchannels(CHANNELS)
-                wf.setsampwidth(p.get_sample_size(FORMAT))
-                wf.setframerate(RATE)
-                wf.writeframes(b''.join(frames))
-                wf.close()
-
-                # r = sr.Recognizer()
-                # with sr.AudioFile(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav") as source:
-                #     audio = r.record(source)
-
-                speech_file = WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav"
-                with open(speech_file, "rb") as audio_file:
-                    content = audio_file.read()
-
-                audio = speech.RecognitionAudio(content=content)
-                google_config = speech.RecognitionConfig(
-                    encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-                    # sample_rate_hertz=44100,
-                    language_code=NATIVE_LENGUAGE + "-EU",
-                    audio_channel_count=2,
-                    enable_separate_recognition_per_channel=True,
-                    enable_automatic_punctuation=True
-                )
-                response = google_client.recognize(config=google_config, audio=audio)
-                spanish_text = response.results[0].alternatives[0].transcript
-
-                # spanish_text = r.recognize_google(audio, language=NATIVE_LENGUAGE + "-EU")
-                ct_voice_id += 1
-
-            elif CHAT_MODE == "write":
-                print("Write something....")
-                spanish_text = input()
-                print("* done recording")
-
-            else:
-                print("Please select between 'write' or 'voice' method")
-                break
-
-            print("Your input message", spanish_text)
-
-        else:
-            spanish_text = INITIAL_MESSAGE
-
-        counter += 1
-
-        t_str_end, t_unix_end, _ = ute.get_current_time()
-
-        # ###################
-        # ### TRANSLATION ###
-        # ###################
-        if TRANSLATION_MODULE:
-            # Here the message is translated from spanish to english.
-            x = google_translator.translate(spanish_text)
-            person_message = x.text + " .\n"
-            global_message += HUMAN_START_SEQUENCE + " " + person_message
-        else:
-            global_message += HUMAN_START_SEQUENCE + " " + spanish_text + " .\n"
-
-        print("*** Global message *** ", global_message)
-
-        bot_result_list.append({
-            "SubjectId": subject_id,
-            "SubjectName": subject_name,
-            "TimeInitStr": t_str_start,
-            "TimeEndStr": t_str_end,
-            "UnixTimestampInit": t_unix_start,
-            "UnixTimestampEnd": t_unix_end,
-            "Source": "Person",
-            "SpanishMessage": spanish_text,
-            # "EnglishMessage": person_message,
-            "Mode": CHAT_MODE,
-            "GlobalMessage": global_message,
-            "ConfigName": CONFIG_NAME,
-        })
-        df_to_save = pd.DataFrame(bot_result_list)
-        df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
-
-        # ##################
-        # ### SUMMARIZER ###
-        # ##################
-
-        if SUMMARIZE_MODULE:
-            n_data = df_to_save.shape[0]
-            if n_data >= 8:
-
-                df_cut = df_to_save.iloc[:(n_data - keep_last_summarizer)]
-                df_small = df_to_save.iloc[(n_data - keep_last_summarizer):]
-
-                all_text_paired = list(zip(df_cut["Source"].values, df_cut["EnglishMessage"].values))
-                text_list = [": ".join(text) for text in all_text_paired]
-                whole_text = " ".join(text_list)
-
-                if len(whole_text.split()) > 50:
-                    answer = summarizer_model(whole_text, max_length=60, min_length=10)
-                    whole_answer = answer[0]["summary_text"]
-                    print("Summary model ...")
-
-                    all_text_paired = list(zip(df_small["Source"].values, df_small["EnglishMessage"].values))
-                    text_list = [": ".join(text) for text in all_text_paired]
-                    whole_text_small = " ".join(text_list)
-
-                    print("*** Summary ***", whole_answer + " " + whole_text_small)
-                    global_message = CONTEXT_MESSAGE + " " + whole_answer + " " + whole_text_small
 
         # ###########
         # ### BOT ###
         # ###########
 
         t_str_start, t_unix_start, _ = ute.get_current_time()
-        # t0 = time.time()
 
-        global_message += " " + BOT_START_SEQUENCE + " "
-
-        response = openai.Completion.create(
-            engine=BOT_MODEL,
-            prompt=global_message,
-            temperature=BOT_TEMPERATURE,
-            max_tokens=INITIAL_TOKENS_OPENAI,
-            top_p=1,
-            frequency_penalty=BOT_FREQUENCY_PENALTY,
-            presence_penalty=BOT_PRESENCE_PENALTY,
-            stop=["Human:", "Person:", "Subject:", "AI:"]
-        )
-
-        bot_answer = response["choices"][0]["text"]
-        print("Bot answer", bot_answer)
+        if spanish_text is not None and not repeat_message_label:
+            if counter > 0 and not random_question_label:
+                response = openai.Completion.create(
+                    engine=BOT_MODEL,
+                    prompt=GLOBAL_MESSAGE,
+                    temperature=BOT_TEMPERATURE,
+                    max_tokens=INITIAL_TOKENS_OPENAI,
+                    top_p=1,
+                    frequency_penalty=BOT_FREQUENCY_PENALTY,
+                    presence_penalty=BOT_PRESENCE_PENALTY,
+                    stop=["Human:", "Person:", "Subject:", "AI:"]
+                )
+                bot_answer = response["choices"][0]["text"]
+                if len(bot_answer.split(":")) > 2:
+                    bot_answer = ":".join(bot_answer.split(":")[:2])
+            elif random_question_label:
+                bot_answer = random.choices(RANDOM_QUESTIONS)[0]
+                RANDOM_QUESTIONS = RANDOM_QUESTIONS.remove(bot_answer)
+                random_question_label = False
+            else:
+                bot_answer = INITIAL_MESSAGE
+        else:
+            bot_answer = "Puedes repetir, por favor ? No te he entendido bien"
+            repeat_message_label = False
 
         # bot_answer = "Maria: Hola, que tal estas ?"
-        bot_message = bot_answer.replace(BOT_NAME+":", "") if BOT_NAME+":" in bot_answer else bot_answer
-        bot_message = bot_message.replace("Bot:", "") if "Bot:" in bot_message else bot_message
-        # print("Time of the answer", np.round(time.time() - t0, 5), "s")
+        bot_message = bot_answer.replace(BOT_NAME + ":", "") if BOT_NAME + ":" in bot_answer else bot_answer
+        bot_message = bot_message.replace("\n", "") if "\n" in bot_message else bot_message
+        bot_message = bot_message[1:] if bot_message[0] == " " else bot_message
 
-        if len(bot_message) < 2 or bot_message == "?" or bot_message == "!":
-            bot_message = "Can you repeat, please ?"
+        if len(bot_message) <= 2 or bot_message == "?" or bot_message == "!":
+            bot_message = "Puedes repetir, por favor ?"
 
-        global_message += BOT_START_SEQUENCE + " " + bot_message
+        bot_message = bot_message if bot_message[-1] in [".", "?", "!"] else bot_message + "."
+
+        detect_language = google_translator.detect(bot_message)
+        if detect_language.lang != "es":
+            x = google_translator.translate(bot_message, dest=NATIVE_LENGUAGE)
+            bot_message_filtered = x.text
+        else:
+            bot_message_filtered = bot_message
+
+        GLOBAL_MESSAGE += "\n" + BOT_START_SEQUENCE + " " + bot_message_filtered
+        print("*** Global message *** \n", GLOBAL_MESSAGE)
 
         t_str_end, t_unix_end, _ = ute.get_current_time()
 
@@ -380,37 +256,29 @@ try:
         # ### TRANSLATION ###
         # ###################
 
-        if TRANSLATION_MODULE:
-            # Here the message is translated from english to spanish.
-            x = google_translator.translate(bot_message, dest=NATIVE_LENGUAGE)
-            bot_message_spanish = x.text
-        else:
-            bot_message_spanish = bot_message
-
         bot_result_list.append({
             "SubjectId": subject_id,
+            "ConversationSentenceId": counter,
             "SubjectName": subject_name,
             "TimeInitStr": t_str_start,
             "TimeEndStr": t_str_end,
             "UnixTimestampInit": t_unix_start,
             "UnixTimestampEnd": t_unix_end,
             "Source": "Bot",
-            "SpanishMessage": bot_message_spanish,
+            "SpanishMessage": bot_message_filtered,
             # "EnglishMessage": person_message,
             "Mode": CHAT_MODE,
-            "GlobalMessage": global_message,
+            "GlobalMessage": GLOBAL_MESSAGE,
             "ConfigName": CONFIG_NAME,
         })
 
         df_to_save = pd.DataFrame(bot_result_list)
         df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
 
-        print("Bot message", bot_message_spanish)
-
         # #################
         # ### USING AWS ###
         # #################
-        bot_message_spanish_aws = bot_message_spanish
+        bot_message_spanish_aws = bot_message_filtered
         bot_message_spanish_aws = bot_message_spanish_aws.replace("?", ".").replace("¿", ".")
         bot_message_spanish_aws = bot_message_spanish_aws.replace('.', '<break time="0.6s"/>')
         bot_message_spanish_aws = bot_message_spanish_aws.replace(',', '<break time="0.25s"/>')
@@ -463,7 +331,7 @@ try:
             call_to_omniverse = " python " + ROOT_TO_OMNIVERSE + "/my_test_client.py "
             call_to_omniverse += " " + ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE + " " + OMNIVERSE_AVATAR
             # call_to_omniverse += " " + OUTPUT_FILE_IN_WAVE.replace(".wav", ".mp3") + " " + OMNIVERSE_AVATAR
-            print(call_to_omniverse)
+            # print(call_to_omniverse)
             subprocess.call(call_to_omniverse, shell=True)
         else:
             # Initializing variables
@@ -498,13 +366,179 @@ try:
             while data:
                 stream.write(data)
                 data = f.readframes(CHUNK)
-
                 # stop stream
             stream.stop_stream()
             stream.close()
 
             # close PyAudio
             p.terminate()
+
+        # #############
+        # ### HUMAN ###
+        # #############
+
+        t_str_start, t_unix_start, _ = ute.get_current_time()
+
+        if CHAT_MODE == "voice":
+
+            t0 = time.time()
+            t0_start_talk = time.time()
+            silence_th = 0
+
+            p = pyaudio.PyAudio()
+            stream = p.open(format=FORMAT,
+                            channels=CHANNELS,
+                            rate=RATE,
+                            input=True,
+                            frames_per_buffer=CHUNK)
+
+            print("*** Recording ***")
+            frames = []
+            for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
+                data = stream.read(CHUNK)  # , exception_on_overflow=False
+                frames.append(data)
+
+                # Silence Detection module
+                if time.time() - t0 > 1.5:
+
+                    wf = wave.open(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav", 'wb')
+                    wf.setnchannels(CHANNELS)
+                    wf.setsampwidth(p.get_sample_size(FORMAT))
+                    wf.setframerate(RATE)
+                    wf.writeframes(b''.join(frames))
+                    wf.close()
+
+                    vad = silence_detection_pipeline(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav")
+
+                    x = vad.get_timeline().segments_set_
+
+                    if len(x) > 0:
+                        last_time_talk = np.max([x_elt.end for x_elt in list(x)])
+                        if time.time() - (last_time_talk + t0_start_talk) > TIME_TO_CUT:
+                            break
+                        else:
+                            silence_th += len(x) - 1
+
+                    t0 = time.time()
+
+            print("*** Done recording ***")
+
+            stream.stop_stream()
+            stream.close()
+            p.terminate()
+
+            wf = wave.open(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav", 'wb')
+            wf.setnchannels(CHANNELS)
+            wf.setsampwidth(p.get_sample_size(FORMAT))
+            wf.setframerate(RATE)
+            wf.writeframes(b''.join(frames))
+            wf.close()
+
+            speech_file = WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav"
+            with open(speech_file, "rb") as audio_file:
+                content = audio_file.read()
+            audio = speech.RecognitionAudio(content=content)
+            google_config = speech.RecognitionConfig(
+                encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+                # sample_rate_hertz=44100,
+                language_code=NATIVE_LENGUAGE + "-EU",
+                audio_channel_count=2,
+                enable_separate_recognition_per_channel=True,
+                enable_automatic_punctuation=True
+            )
+            response = google_client.recognize(config=google_config, audio=audio)
+
+            if len(response.results) > 0:
+                repeat_message_label = False
+                spanish_text = response.results[0].alternatives[0].transcript
+
+                vad = silence_detection_pipeline(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav")
+                x = vad.get_timeline().segments_set_
+                time_start_talking = list(x)[0].start
+
+                if time_start_talking > 3.5 and (t0 - t0_start_talk) - time_start_talking <= 1:
+                    random_question_label = True
+            else:
+                spanish_text = " "
+                repeat_message_label = True
+
+            # spanish_text = r.recognize_google(audio, language=NATIVE_LENGUAGE + "-EU")
+            ct_voice_id += 1
+
+        elif CHAT_MODE == "write":
+            print("Write something....")
+            spanish_text = input()
+
+        else:
+            print("Please select between 'write' or 'voice' method")
+            break
+
+        t_str_end, t_unix_end, _ = ute.get_current_time()
+
+        # ###################
+        # ### TRANSLATION ###
+        # ###################
+
+        if TRANSLATION_MODULE:
+            # Here the message is translated from spanish to english.
+            x = google_translator.translate(spanish_text)
+            person_message = x.text + " ."
+        else:
+            person_message = spanish_text
+
+        person_message = person_message if person_message[-1] in [".", "?", "!"] else person_message + "."
+        GLOBAL_MESSAGE += "\n" + HUMAN_START_SEQUENCE + " " + person_message
+        print("*** Global message *** \n", GLOBAL_MESSAGE)
+
+        bot_result_list.append({
+            "SubjectId": subject_id,
+            "ConversationSentenceId": counter,
+            "SubjectName": subject_name,
+            "TimeInitStr": t_str_start,
+            "TimeEndStr": t_str_end,
+            "UnixTimestampInit": t_unix_start,
+            "UnixTimestampEnd": t_unix_end,
+            "Source": "Person",
+            "SpanishMessage": spanish_text,
+            # "EnglishMessage": person_message,
+            "Mode": CHAT_MODE,
+            "GlobalMessage": GLOBAL_MESSAGE,
+            "ConfigName": CONFIG_NAME,
+        })
+        df_to_save = pd.DataFrame(bot_result_list)
+        df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
+
+        # ##################
+        # ### SUMMARIZER ###
+        # ##################
+
+        if SUMMARIZE_MODULE:
+            n_data = df_to_save.shape[0]
+            if n_data >= 8:
+
+                df_cut = df_to_save.iloc[:(n_data - keep_last_summarizer)]
+                df_small = df_to_save.iloc[(n_data - keep_last_summarizer):]
+
+                all_text_paired = list(zip(df_cut["Source"].values, df_cut["EnglishMessage"].values))
+                text_list = [": ".join(text) for text in all_text_paired]
+                whole_text = " ".join(text_list)
+
+                if len(whole_text.split()) > 50:
+                    answer = summarizer_model(whole_text, max_length=60, min_length=10)
+                    whole_answer = answer[0]["summary_text"]
+                    print("Summary model ...")
+
+                    all_text_paired = list(zip(df_small["Source"].values, df_small["EnglishMessage"].values))
+                    text_list = [": ".join(text) for text in all_text_paired]
+                    whole_text_small = " ".join(text_list)
+
+                    print("*** Summary ***", whole_answer + " " + whole_text_small)
+                    GLOBAL_MESSAGE = CONTEXT_MESSAGE + " " + whole_answer + " " + whole_text_small
+
+        counter += 1
+
+        if person_message == "Adiós" or person_message == "Hasta luego" or person_message == "Adios":
+            break
 
 except KeyboardInterrupt:
     pass
