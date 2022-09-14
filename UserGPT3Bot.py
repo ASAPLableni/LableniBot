@@ -233,13 +233,12 @@ try:
         # bot_answer = "Maria: Hola, que tal estas ?"
         bot_message = bot_answer.replace(BOT_NAME + ":", "") if BOT_NAME + ":" in bot_answer else bot_answer
         bot_message = bot_message.replace("\n", "") if "\n" in bot_message else bot_message
-        bot_message = bot_message[1:] if bot_message[0] == " " else bot_message
+        # bot_message = bot_message[1:] if bot_message[0] == " " else bot_message
 
         if len(bot_message) <= 2 or bot_message == "?" or bot_message == "!":
             bot_message = "Puedes repetir, por favor ?"
 
         bot_message = bot_message if bot_message[-1] in [".", "?", "!"] else bot_message + "."
-
         detect_language = google_translator.detect(bot_message)
         if detect_language.lang != "es":
             x = google_translator.translate(bot_message, dest=NATIVE_LENGUAGE)
@@ -247,7 +246,8 @@ try:
         else:
             bot_message_filtered = bot_message
 
-        GLOBAL_MESSAGE += "\n" + BOT_START_SEQUENCE + " " + bot_message_filtered
+        # GLOBAL_MESSAGE += "\n" + BOT_START_SEQUENCE + " " + bot_message_filtered
+        GLOBAL_MESSAGE += bot_message_filtered
         print("*** Global message *** \n", GLOBAL_MESSAGE)
 
         t_str_end, t_unix_end, _ = ute.get_current_time()
@@ -489,6 +489,9 @@ try:
         person_message = person_message if person_message[-1] in [".", "?", "!"] else person_message + "."
         GLOBAL_MESSAGE += "\n" + HUMAN_START_SEQUENCE + " " + person_message
         print("*** Global message *** \n", GLOBAL_MESSAGE)
+
+        # To start the message with Bot sequence.
+        GLOBAL_MESSAGE += "\n" + BOT_START_SEQUENCE
 
         bot_result_list.append({
             "SubjectId": subject_id,
