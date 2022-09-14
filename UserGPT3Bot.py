@@ -122,9 +122,9 @@ silence_detection_pipeline.instantiate(HYPER_PARAMETERS)
 # ### TRANSLATION MODULE ###
 # ##########################
 
-if TRANSLATION_MODULE:
-    # Initialize the translator model
-    google_translator = Translator()
+# if TRANSLATION_MODULE:
+# Initialize the translator model
+google_translator = Translator()
 
 # ################################
 # ### SUMMARIZATION PARAMETERS ###
