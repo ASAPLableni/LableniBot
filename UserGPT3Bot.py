@@ -25,11 +25,28 @@ from boto3 import Session
 
 from pyannote.audio.pipelines import VoiceActivityDetection
 
+from tkinter import *
+
+from Interface import Interface
 import utils as ute
 
 # ######################################
 # ### Opening PARAMETERS CONFIG file ###
 # ######################################
+
+# ### Interface ###
+
+root = Tk()
+root.title("LabLeni BOT")
+root.geometry("400x400")
+
+app = Interface(master=root)
+
+app.mainloop()
+
+print(app.bot_config)
+
+# ### End of the Interface ###
 
 root_to_parameters = sys.argv[1] if len(sys.argv) > 1 else None  # 'LableniBotConfig/Parameters/parameters_neutral.json'
 if root_to_parameters is None:
