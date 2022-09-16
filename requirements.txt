@@ -21,3 +21,4 @@ openai
 wordcloud
 pydub
 # https://github.com/pyannote/pyannote-audio/archive/develop.zip
+tk
