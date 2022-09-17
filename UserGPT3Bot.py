@@ -6,7 +6,7 @@ import time
 import pyaudio
 import os
 import json
-import sys
+# import sys
 import random
 # import pyttsx3
 
@@ -48,25 +48,10 @@ print(app.bot_config)
 
 # ### End of the Interface ###
 
-root_to_parameters = sys.argv[1] if len(sys.argv) > 1 else None  # 'LableniBotConfig/Parameters/parameters_neutral.json'
-if root_to_parameters is None:
-    print("Please select a configuration of the Avatar through the different options:")
-    correct_options_dict = {}
-    for i_conf, conf in enumerate(os.listdir("LableniBotConfig/Parameters")):
-        if "parameters" in conf:
-            print("Input ", i_conf, "Configuration ", conf)
-            correct_options_dict[str(i_conf)] = "LableniBotConfig/Parameters/" + conf
+bot_txt, bot_state = app.bot_config.split(" ; ")
+bot_txt_to_root, bot_state_to_root = bot_txt.replace(" ", "_"), bot_state.replace(" ", "_")
 
-    print()
-    print("Please introduce an input for your configuration")
-    conf_choose = str(input())
-
-    if conf_choose not in correct_options_dict.keys():
-        print("Due to bad configuration selection, parameters_neutral is selected")
-        root_to_parameters = 'LableniBotConfig/Parameters/parameters_neutral.json'
-    else:
-        print("Configuration", correct_options_dict[conf_choose], " is selected")
-        root_to_parameters = correct_options_dict[conf_choose]
+root_to_parameters = "LableniBotConfig/Parameters/" + bot_txt_to_root + "/" + bot_state_to_root + ".json"
 
 with open(root_to_parameters, "r", encoding='utf-8') as read_file:
     parameters_dict = json.load(read_file)
@@ -431,7 +416,8 @@ try:
 
                     if len(x) > 0:
                         last_time_talk = np.max([x_elt.end for x_elt in list(x)])
-                        if time.time() - (last_time_talk + t0_start_talk) > TIME_TO_CUT:
+                        cond_listen = (time.time() - t0_start_talk) > 4
+                        if time.time() - (last_time_talk + t0_start_talk) > TIME_TO_CUT and cond_listen:
                             break
                         else:
                             silence_th += len(x) - 1

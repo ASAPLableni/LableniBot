@@ -72,7 +72,15 @@ class Interface(Frame):
 
         file_menu.add_separator()
 
-        button_close = Button(text="Close", command=self.close_app)
+        menu_male_2 = Menu(my_menu)
+        menu_male_2.add_command(label="Neutral 1", command=lambda: self.select_bot("Neutral", "Neutral 1"))
+        menu_male_2.add_separator()
+        menu_male_2.add_command(label="Neutral 2", command=lambda: self.select_bot("Neutral", "Neutral 2"))
+        menu_male_2.add_separator()
+        menu_male_2.add_command(label="Neutral 3", command=lambda: self.select_bot("Neutral", "Neutral 3"))
+        file_menu.add_cascade(label="Neutral", menu=menu_male_2)
+
+        button_close = Button(text="Done !", command=self.close_app)
         button_close.grid(column=1, row=0, sticky='e', padx=100, pady=2)
         button_close.pack()
 
