@@ -221,13 +221,14 @@ try:
                 if len(bot_answer.split(":")) > 2:
                     bot_answer = ":".join(bot_answer.split(":")[:2])
             elif random_question_label:
-                bot_answer = random.choices(RANDOM_QUESTIONS)[0]
-                RANDOM_QUESTIONS = RANDOM_QUESTIONS.remove(bot_answer)
+                bot_answer = "Puedes repetir, por favor? No te he entendido bien"
+                # bot_answer = random.choices(RANDOM_QUESTIONS)[0]
+                # RANDOM_QUESTIONS = RANDOM_QUESTIONS.remove(bot_answer)
                 random_question_label = False
             else:
                 bot_answer = INITIAL_MESSAGE
         else:
-            bot_answer = "Puedes repetir, por favor ? No te he entendido bien"
+            bot_answer = "Puedes repetir, por favor? No te he entendido bien"
             repeat_message_label = False
 
         # bot_answer = "Maria: Hola, que tal estas ?"
