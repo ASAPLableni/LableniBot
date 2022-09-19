@@ -46,6 +46,12 @@ app.mainloop()
 
 print(app.bot_config)
 
+subject_id = app.subject_id
+print("Subject ID", subject_id)
+
+subject_name = app.subject_name
+print("Subject Name", subject_name)
+
 # ### End of the Interface ###
 
 bot_txt, bot_state = app.bot_config.split(" ; ")
@@ -178,18 +184,10 @@ if OMNIVERSE_MODULE:
 # ### INPUTS ###
 # ##############
 
-# SubjectId
-print("Please write your subject id")
-subject_id = input()
-
 PATH_TO_DATA = "Conversations/" + subject_id + "_" + str(init_of_session)
 os.mkdir(PATH_TO_DATA)
 os.mkdir(PATH_TO_DATA + "/Audios")
 WAVE_OUTPUT_FILENAME = PATH_TO_DATA + "/Audios/Subject_" + subject_id
-
-# SubjectName
-print("Please write your name")
-subject_name = input()
 
 TIME_TO_CUT = parameters_dict["TIME_TO_CUT"]
 
@@ -416,7 +414,7 @@ try:
 
                     if len(x) > 0:
                         last_time_talk = np.max([x_elt.end for x_elt in list(x)])
-                        cond_listen = (time.time() - t0_start_talk) > 4
+                        cond_listen = (time.time() - t0_start_talk) > 5
                         if time.time() - (last_time_talk + t0_start_talk) > TIME_TO_CUT and cond_listen:
                             break
                         else:
