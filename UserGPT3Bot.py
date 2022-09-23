@@ -225,7 +225,7 @@ try:
                 RANDOM_QUESTIONS = RANDOM_QUESTIONS.remove(bot_answer)
                 random_question_label = False
             else:
-                bot_answer = INITIAL_MESSAGE
+                bot_answer = BOT_START_SEQUENCE + " " + INITIAL_MESSAGE
         else:
             bot_answer = "Puedes repetir, por favor ? No te he entendido bien"
             repeat_message_label = False
