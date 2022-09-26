@@ -76,6 +76,8 @@ BOT_TEMPERATURE = parameters_dict["BOT_TEMPERATURE"]
 BOT_FREQUENCY_PENALTY = parameters_dict["BOT_FREQUENCY_PENALTY"]
 BOT_PRESENCE_PENALTY = parameters_dict["BOT_PRESENCE_PENALTY"]
 
+SENTENCE_TO_REPEAT = "Puedes repetir, por favor? No te he entendido bien"
+
 # ### Initial message to de chatbot
 
 BOT_NAME = parameters_dict["BOT_NAME"]
@@ -207,6 +209,9 @@ try:
 
         if spanish_text is not None and not repeat_message_label:
             if counter > 0 and not random_question_label:
+
+                t_i_openai = time.time()
+
                 response = openai.Completion.create(
                     engine=BOT_MODEL,
                     prompt=GLOBAL_MESSAGE,
@@ -215,21 +220,27 @@ try:
                     top_p=1,
                     frequency_penalty=BOT_FREQUENCY_PENALTY,
                     presence_penalty=BOT_PRESENCE_PENALTY,
-                    stop=["Human:", "Person:", "Subject:", "AI:"]
+                    stop=["Humano:", "Human:", subject_name+":"]
                 )
+
+                t_f_openai = time.time()
+
                 bot_answer = response["choices"][0]["text"]
                 if len(bot_answer.split(":")) > 2:
                     bot_answer = ":".join(bot_answer.split(":")[:2])
             elif random_question_label:
-                bot_answer = "Puedes repetir, por favor? No te he entendido bien"
+                bot_answer = BOT_START_SEQUENCE + " " + SENTENCE_TO_REPEAT
                 # bot_answer = random.choices(RANDOM_QUESTIONS)[0]
                 # RANDOM_QUESTIONS = RANDOM_QUESTIONS.remove(bot_answer)
                 random_question_label = False
+                t_f_openai, t_i_openai = 0, 0
             else:
                 bot_answer = BOT_START_SEQUENCE + " " + INITIAL_MESSAGE
+                t_f_openai, t_i_openai = 0, 0
         else:
-            bot_answer = "Puedes repetir, por favor? No te he entendido bien"
+            bot_answer = BOT_START_SEQUENCE + " " + SENTENCE_TO_REPEAT
             repeat_message_label = False
+            t_f_openai, t_i_openai = 0, 0
 
         # bot_answer = "Maria: Hola, que tal estas ?"
         bot_message = bot_answer.replace(BOT_NAME + ":", "") if BOT_NAME + ":" in bot_answer else bot_answer
@@ -237,7 +248,7 @@ try:
         # bot_message = bot_message[1:] if bot_message[0] == " " else bot_message
 
         if len(bot_message) <= 2 or bot_message == "?" or bot_message == "!":
-            bot_message = "Puedes repetir, por favor ?"
+            bot_message = SENTENCE_TO_REPEAT
 
         bot_message = bot_message if bot_message[-1] in [".", "?", "!"] else bot_message + "."
         detect_language = google_translator.detect(bot_message)
@@ -253,9 +264,12 @@ try:
 
         t_str_end, t_unix_end, _ = ute.get_current_time()
 
-        # ###################
-        # ### TRANSLATION ###
-        # ###################
+        # #################
+        # ### SAVE DATA ###
+        # #################
+
+        t_f_aws, t_i_aws = 0, 0
+        t_f_s2t, t_i_s2t = 0, 0
 
         bot_result_list.append({
             "SubjectId": subject_id,
@@ -271,6 +285,9 @@ try:
             "Mode": CHAT_MODE,
             "GlobalMessage": GLOBAL_MESSAGE,
             "ConfigName": CONFIG_NAME,
+            "OpenAItime_s": (t_f_openai - t_i_openai),
+            "AWStime_s": (t_f_aws - t_i_aws),
+            "S2Ttime_s": (t_f_s2t - t_i_s2t)
         })
 
         df_to_save = pd.DataFrame(bot_result_list)
@@ -279,6 +296,9 @@ try:
         # #################
         # ### USING AWS ###
         # #################
+
+        t_i_aws = time.time()
+
         bot_message_spanish_aws = bot_message_filtered
         bot_message_spanish_aws = bot_message_spanish_aws.replace("?", ".").replace("¿", ".")
         bot_message_spanish_aws = bot_message_spanish_aws.replace('.', '<break time="0.6s"/>')
@@ -295,6 +315,8 @@ try:
             Engine=ENGINE_TYPE,
             TextType="ssml"
         )
+
+        t_f_aws = time.time()
 
         '''
         with closing(response["AudioStream"]) as save_stream:
@@ -436,6 +458,8 @@ try:
             wf.writeframes(b''.join(frames))
             wf.close()
 
+            t_i_s2t = time.time()
+
             speech_file = WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav"
             with open(speech_file, "rb") as audio_file:
                 content = audio_file.read()
@@ -449,6 +473,8 @@ try:
                 enable_automatic_punctuation=True
             )
             response = google_client.recognize(config=google_config, audio=audio)
+
+            t_f_s2t = time.time()
 
             if len(response.results) > 0:
                 repeat_message_label = False
@@ -469,9 +495,11 @@ try:
 
         elif CHAT_MODE == "write":
             print("Write something....")
+            t_i_s2t = time.time()
             spanish_text = input()
-
+            t_f_s2t = time.time()
         else:
+            t_f_s2t, t_i_s2t = 0, 0
             print("Please select between 'write' or 'voice' method")
             break
 
@@ -509,6 +537,9 @@ try:
             "Mode": CHAT_MODE,
             "GlobalMessage": GLOBAL_MESSAGE,
             "ConfigName": CONFIG_NAME,
+            "OpenAItime_s": (t_f_openai - t_i_openai),
+            "AWStime_s": (t_f_aws - t_i_aws),
+            "S2Ttime_s": (t_f_s2t - t_i_s2t),
         })
         df_to_save = pd.DataFrame(bot_result_list)
         df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
