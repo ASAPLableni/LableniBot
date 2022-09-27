@@ -27,3 +27,14 @@ def get_current_time():
     date_str_other_form = year + month + day + "_" + hour + mint + sec + "." + mili_sec[:3]
 
     return date_str, t.timestamp(), date_str_other_form
+
+def from_str_to_was_polly_pcm(input_str):
+
+    input_str_aws = input_str
+    input_str_aws = input_str_aws.replace("?", ".").replace("¿", ".")
+    input_str_aws = input_str_aws.replace('.', '<break time="0.6s"/>')
+    input_str_aws = input_str_aws.replace(',', '<break time="0.25s"/>')
+    input_str_aws = '<prosody rate="slow">' + input_str_aws + '</prosody>'
+    input_str_aws = "<speak>" + input_str_aws + "</speak>"
+
+    return input_str_aws

@@ -7,7 +7,7 @@ import pyaudio
 import os
 import json
 # import sys
-import random
+# import random
 # import pyttsx3
 
 # import speech_recognition as sr
@@ -160,10 +160,10 @@ RANDOM_QUESTIONS = [q.replace("\n", "") for q in RANDOM_QUESTIONS]
 _, _, init_of_session = ute.get_current_time()
 
 OUTPUT_FILE_IN_WAVE = "audio_bot_aws.wav"  # WAV format Output file  name
-NATIVE_LENGUAGE = "es"
+NATIVE_LENGUAGE = "es" # TODO: Put the parameter in the config or in the interface.
 
 # Modes avaible: 'voice' or 'write'.
-CHAT_MODE = "voice"
+CHAT_MODE = "voice" # TODO: Put the parameter in the interface.
 
 # Time to wait until ask the user to repeat.
 waitTime = 15
@@ -173,6 +173,7 @@ FORMAT = pyaudio.paInt16
 CHANNELS = parameters_dict["CHANNELS"]
 RATE = parameters_dict["RATE"]
 RECORD_SECONDS = parameters_dict["RECORD_SECONDS"]
+TIME_TO_CUT = parameters_dict["TIME_TO_CUT"]
 
 # ########################
 # ### OMNIVERSE MODULE ###
@@ -191,13 +192,10 @@ os.mkdir(PATH_TO_DATA)
 os.mkdir(PATH_TO_DATA + "/Audios")
 WAVE_OUTPUT_FILENAME = PATH_TO_DATA + "/Audios/Subject_" + subject_id
 
-TIME_TO_CUT = parameters_dict["TIME_TO_CUT"]
-
 bot_result_list = []
 ct_voice_id = 0
 spanish_text = " "
-random_question_label = False
-repeat_message_label = False
+random_question_label, repeat_message_label = False, False
 try:
     while True:
 
@@ -220,27 +218,30 @@ try:
                     top_p=1,
                     frequency_penalty=BOT_FREQUENCY_PENALTY,
                     presence_penalty=BOT_PRESENCE_PENALTY,
-                    stop=["Humano:", "Human:", subject_name+":"]
+                    stop=["Humano:", "Human:", subject_name + ":"]
                 )
 
                 t_f_openai = time.time()
 
                 bot_answer = response["choices"][0]["text"]
-                if len(bot_answer.split(":")) > 2:
-                    bot_answer = ":".join(bot_answer.split(":")[:2])
+                bot_answer = ":".join(bot_answer.split(":")[:2]) if len(bot_answer.split(":")) > 2 else bot_answer
+                    
             elif random_question_label:
+                t_i_openai = time.time()
                 bot_answer = BOT_START_SEQUENCE + " " + SENTENCE_TO_REPEAT
+                t_f_openai = time.time()
                 # bot_answer = random.choices(RANDOM_QUESTIONS)[0]
                 # RANDOM_QUESTIONS = RANDOM_QUESTIONS.remove(bot_answer)
                 random_question_label = False
-                t_f_openai, t_i_openai = 0, 0
             else:
+                t_i_openai = time.time()
                 bot_answer = BOT_START_SEQUENCE + " " + INITIAL_MESSAGE
-                t_f_openai, t_i_openai = 0, 0
+                t_f_openai = time.time()
         else:
+            t_i_openai = time.time()
             bot_answer = BOT_START_SEQUENCE + " " + SENTENCE_TO_REPEAT
+            t_f_openai = time.time()
             repeat_message_label = False
-            t_f_openai, t_i_openai = 0, 0
 
         # bot_answer = "Maria: Hola, que tal estas ?"
         bot_message = bot_answer.replace(BOT_NAME + ":", "") if BOT_NAME + ":" in bot_answer else bot_answer
@@ -268,9 +269,7 @@ try:
         # ### SAVE DATA ###
         # #################
 
-        t_f_aws, t_i_aws = 0, 0
-        t_f_s2t, t_i_s2t = 0, 0
-
+        # TODO: Put all this saves in the ChatbotGlobals.py script.
         bot_result_list.append({
             "SubjectId": subject_id,
             "ConversationSentenceId": counter,
@@ -286,8 +285,8 @@ try:
             "GlobalMessage": GLOBAL_MESSAGE,
             "ConfigName": CONFIG_NAME,
             "OpenAItime_s": (t_f_openai - t_i_openai),
-            "AWStime_s": (t_f_aws - t_i_aws),
-            "S2Ttime_s": (t_f_s2t - t_i_s2t)
+            "AWStime_s": np.nan,
+            "S2Ttime_s": np.nan
         })
 
         df_to_save = pd.DataFrame(bot_result_list)
@@ -299,18 +298,14 @@ try:
 
         t_i_aws = time.time()
 
-        bot_message_spanish_aws = bot_message_filtered
-        bot_message_spanish_aws = bot_message_spanish_aws.replace("?", ".").replace("¿", ".")
-        bot_message_spanish_aws = bot_message_spanish_aws.replace('.', '<break time="0.6s"/>')
-        bot_message_spanish_aws = bot_message_spanish_aws.replace(',', '<break time="0.25s"/>')
-        bot_message_spanish_aws = '<prosody rate="slow">' + bot_message_spanish_aws + '</prosody>'
-        bot_message_spanish_aws = "<speak>" + bot_message_spanish_aws + "</speak>"
+        # Message string transform to AWS Polly PCM format. 
+        bot_message_spanish_aws = ute.from_str_to_was_polly_pcm(bot_message_filtered)
 
         RATE = 16000  # Polly supports 16000Hz and 8000Hz output for PCM format
         response = polly.synthesize_speech(
             Text=bot_message_spanish_aws,
-            OutputFormat="pcm",  # "pcm",
-            VoiceId=BOT_VOICE_ID,  # "Lucia",
+            OutputFormat="pcm",
+            VoiceId=BOT_VOICE_ID,
             # SampleRate=str(RATE),
             Engine=ENGINE_TYPE,
             TextType="ssml"
@@ -464,6 +459,7 @@ try:
             with open(speech_file, "rb") as audio_file:
                 content = audio_file.read()
             audio = speech.RecognitionAudio(content=content)
+
             google_config = speech.RecognitionConfig(
                 encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
                 # sample_rate_hertz=44100,
@@ -537,7 +533,7 @@ try:
             "Mode": CHAT_MODE,
             "GlobalMessage": GLOBAL_MESSAGE,
             "ConfigName": CONFIG_NAME,
-            "OpenAItime_s": (t_f_openai - t_i_openai),
+            "OpenAItime_s": np.nan,
             "AWStime_s": (t_f_aws - t_i_aws),
             "S2Ttime_s": (t_f_s2t - t_i_s2t),
         })
