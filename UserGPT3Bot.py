@@ -29,6 +29,7 @@ from tkinter import *
 
 from Interface import Interface
 import utils as ute
+from ChatbotGlobals import LableniChatbot
 
 # ######################################
 # ### Opening PARAMETERS CONFIG file ###
@@ -192,6 +193,18 @@ os.mkdir(PATH_TO_DATA)
 os.mkdir(PATH_TO_DATA + "/Audios")
 WAVE_OUTPUT_FILENAME = PATH_TO_DATA + "/Audios/Subject_" + subject_id
 
+# ###################################
+# ### DEFINE OF THE CLASS CHATBOT ###
+#####################################
+
+my_chatbot = LableniChatbot(
+    subject_id = subject_id,
+    subject_name = subject_name, 
+    mode_chat = CHAT_MODE, 
+    config_name = CONFIG_NAME,
+    path_to_save=PATH_TO_DATA + "/Conv_" + str(init_of_session)
+)
+
 bot_result_list = []
 ct_voice_id = 0
 spanish_text = " "
@@ -269,6 +282,7 @@ try:
         # ### SAVE DATA ###
         # #################
 
+        '''
         # TODO: Put all this saves in the ChatbotGlobals.py script.
         bot_result_list.append({
             "SubjectId": subject_id,
@@ -288,9 +302,19 @@ try:
             "AWStime_s": np.nan,
             "S2Ttime_s": np.nan
         })
+        '''
 
-        df_to_save = pd.DataFrame(bot_result_list)
-        df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
+        my_chatbot.save_data(
+            counter = counter,
+            t_str_start = t_str_start, t_str_end = t_str_end, t_unix_start = t_unix_start, t_unix_end = t_unix_end, 
+            source = "Bot", 
+            source_message = bot_message_filtered, 
+            global_message = GLOBAL_MESSAGE, 
+            openai_time_s = (t_f_openai - t_i_openai), aws_time_s = np.nan, s2t_time_s = np.nan
+        )
+
+        # df_to_save = pd.DataFrame(bot_result_list)
+        # df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
 
         # #################
         # ### USING AWS ###
@@ -519,6 +543,7 @@ try:
         # To start the message with Bot sequence.
         GLOBAL_MESSAGE += "\n" + BOT_START_SEQUENCE
 
+        '''
         bot_result_list.append({
             "SubjectId": subject_id,
             "ConversationSentenceId": counter,
@@ -537,8 +562,19 @@ try:
             "AWStime_s": (t_f_aws - t_i_aws),
             "S2Ttime_s": (t_f_s2t - t_i_s2t),
         })
+        '''
+
+        my_chatbot.save_data(
+            counter = counter,
+            t_str_start = t_str_start, t_str_end = t_str_end, t_unix_start = t_unix_start, t_unix_end = t_unix_end, 
+            source = "Person", 
+            source_message = spanish_text, 
+            global_message = GLOBAL_MESSAGE, 
+            openai_time_s = np.nan, aws_time_s = (t_f_aws - t_i_aws), s2t_time_s = (t_f_s2t - t_i_s2t)
+        )
+        
         df_to_save = pd.DataFrame(bot_result_list)
-        df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
+        # df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
 
         # ##################
         # ### SUMMARIZER ###
