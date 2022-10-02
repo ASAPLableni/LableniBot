@@ -218,7 +218,8 @@ try:
         t_str_start, t_unix_start, _ = ute.get_current_time()
 
         if spanish_text is not None and not repeat_message_label:
-            if counter > 0 and not random_question_label:
+            # if counter > 0 and not random_question_label:
+            if counter > 0:
 
                 t_i_openai = time.time()
 
