@@ -58,38 +58,55 @@ print("Subject Name", subject_name)
 bot_txt, bot_state = app.bot_config.split(" ; ")
 bot_txt_to_root, bot_state_to_root = bot_txt.replace(" ", "_"), bot_state.replace(" ", "_")
 
-root_to_parameters = "LableniBotConfig/Parameters/" + bot_txt_to_root + "/" + bot_state_to_root + ".json"
+root_to_parameters = "LableniBotConfig/Personalities/" + bot_txt_to_root + "/" + bot_state_to_root + ".json"
 
 with open(root_to_parameters, "r", encoding='utf-8') as read_file:
+    personalities_dict = json.load(read_file)
+
+CONFIG_NAME = personalities_dict["CONFIG_NAME"]
+BOT_VOICE_ID = personalities_dict["BOT_VOICE_ID"]
+ENGINE_TYPE = personalities_dict["ENGINE_TYPE"]
+
+# ### Initial message to de chatbot
+
+BOT_NAME = personalities_dict["BOT_NAME"]
+BOT_START_SEQUENCE = BOT_NAME + ":"
+
+HUMAN_NAME = personalities_dict["HUMAN_NAME"]
+HUMAN_START_SEQUENCE = HUMAN_NAME + ":"
+
+CONTEXT_MESSAGE = personalities_dict["CONTEXT_MESSAGE"]
+INITIAL_MESSAGE = personalities_dict["INITIAL_MESSAGE"]
+counter = 0
+
+GLOBAL_MESSAGE = CONTEXT_MESSAGE + "\n"
+
+# ############################
+# ### Open Parameters dict ###
+# ############################
+
+with open("LableniBotConfig/bot_parameters.json", "r", encoding='utf-8') as read_file:
     parameters_dict = json.load(read_file)
 
 SUMMARIZE_MODULE = parameters_dict["SUMMARIZE_MODULE"]
 TRANSLATION_MODULE = parameters_dict["TRANSLATION_MODULE"]
 OMNIVERSE_MODULE = parameters_dict["OMNIVERSE_MODULE"]
 
-CONFIG_NAME = parameters_dict["CONFIG_NAME"]
 INITIAL_TOKENS_OPENAI = parameters_dict["INITIAL_TOKENS_OPENAI"]
-BOT_VOICE_ID = parameters_dict["BOT_VOICE_ID"]
-ENGINE_TYPE = parameters_dict["ENGINE_TYPE"]
-
 BOT_MODEL = parameters_dict["BOT_MODEL"]
 BOT_TEMPERATURE = parameters_dict["BOT_TEMPERATURE"]
 BOT_FREQUENCY_PENALTY = parameters_dict["BOT_FREQUENCY_PENALTY"]
 BOT_PRESENCE_PENALTY = parameters_dict["BOT_PRESENCE_PENALTY"]
 
-# ### Initial message to de chatbot
-
-BOT_NAME = parameters_dict["BOT_NAME"]
-BOT_START_SEQUENCE = BOT_NAME + ":"
-
-HUMAN_NAME = parameters_dict["HUMAN_NAME"]
-HUMAN_START_SEQUENCE = HUMAN_NAME + ":"
-
-CONTEXT_MESSAGE = parameters_dict["CONTEXT_MESSAGE"]
-INITIAL_MESSAGE = parameters_dict["INITIAL_MESSAGE"]
-counter = 0
-
-GLOBAL_MESSAGE = CONTEXT_MESSAGE + "\n"
+# Time to wait until ask the user to repeat.
+waitTime = 15
+# Audio record parameters.
+CHUNK = parameters_dict["CHUNK"]
+FORMAT = pyaudio.paInt16
+CHANNELS = parameters_dict["CHANNELS"]
+RATE = parameters_dict["RATE"]
+RECORD_SECONDS = parameters_dict["RECORD_SECONDS"]
+TIME_TO_CUT = parameters_dict["TIME_TO_CUT"]
 
 # ###########################
 # ### Opening CONFIG file ###
@@ -163,16 +180,6 @@ NATIVE_LENGUAGE = "es" # TODO: Put the parameter in the config or in the interfa
 
 # Modes avaible: 'voice' or 'write'.
 CHAT_MODE = "voice" # TODO: Put the parameter in the interface.
-
-# Time to wait until ask the user to repeat.
-waitTime = 15
-# Audio record parameters.
-CHUNK = parameters_dict["CHUNK"]
-FORMAT = pyaudio.paInt16
-CHANNELS = parameters_dict["CHANNELS"]
-RATE = parameters_dict["RATE"]
-RECORD_SECONDS = parameters_dict["RECORD_SECONDS"]
-TIME_TO_CUT = parameters_dict["TIME_TO_CUT"]
 
 # ########################
 # ### OMNIVERSE MODULE ###
@@ -309,7 +316,9 @@ try:
             source = "Bot", 
             source_message = bot_message_filtered, 
             global_message = GLOBAL_MESSAGE, 
-            openai_time_s = (t_f_openai - t_i_openai), aws_time_s = np.nan, s2t_time_s = np.nan
+            openai_time_s = (t_f_openai - t_i_openai), aws_time_s = np.nan, s2t_time_s = np.nan, 
+            time_bot_talk = np.nan,
+            time_person_talk = np.nan
         )
 
         # df_to_save = pd.DataFrame(bot_result_list)
@@ -350,6 +359,9 @@ try:
         # #################
         # ### OMNIVERSE ###
         # #################
+
+        t_bot_talk_start = time.time()
+
         if OMNIVERSE_MODULE:
 
             # Initializing variables
@@ -414,12 +426,15 @@ try:
             # close PyAudio
             p.terminate()
 
+        t_bot_talk_end = time.time()
+
         # #############
         # ### HUMAN ###
         # #############
 
         t_str_start, t_unix_start, _ = ute.get_current_time()
 
+        t_person_talk_start = time.time()
         if CHAT_MODE == "voice":
 
             t0 = time.time()
@@ -522,6 +537,8 @@ try:
             print("Please select between 'write' or 'voice' method")
             break
 
+        t_person_talk_end = time.time()
+
         t_str_end, t_unix_end, _ = ute.get_current_time()
 
         # ###################
@@ -569,7 +586,9 @@ try:
             source = "Person", 
             source_message = spanish_text, 
             global_message = GLOBAL_MESSAGE, 
-            openai_time_s = np.nan, aws_time_s = (t_f_aws - t_i_aws), s2t_time_s = (t_f_s2t - t_i_s2t)
+            openai_time_s = np.nan, aws_time_s = (t_f_aws - t_i_aws), s2t_time_s = (t_f_s2t - t_i_s2t),
+            time_bot_talk = (t_bot_talk_end - t_bot_talk_start), 
+            time_person_talk = (t_person_talk_end - t_person_talk_start)
         )
         
         df_to_save = pd.DataFrame(bot_result_list)

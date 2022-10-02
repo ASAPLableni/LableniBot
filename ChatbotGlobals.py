@@ -18,7 +18,8 @@ class LableniChatbot:
     def save_data(self,
         counter,
         t_str_start, t_str_end, t_unix_start, t_unix_end, 
-        source, source_message, global_message, openai_time_s, aws_time_s, s2t_time_s):
+        source, source_message, global_message, openai_time_s, aws_time_s, s2t_time_s, 
+        time_bot_talk, time_person_talk):
 
         chat_conversation = self.chat_conversation.append({
             "ConversationSentenceId": counter,
@@ -35,7 +36,9 @@ class LableniChatbot:
             "ConfigName": self.config_name,
             "OpenAItime_s": openai_time_s,
             "AWStime_s": aws_time_s,
-            "S2Ttime_s": s2t_time_s
+            "S2Ttime_s": s2t_time_s,
+            "TimeBotTalk_s": time_bot_talk,
+            "TimePersonTalk_s": time_person_talk
         })
         df_to_save = pd.DataFrame(chat_conversation)
         df_to_save.to_excel(self.path_to_save + ".xlsx", index=False)
