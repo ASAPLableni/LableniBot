@@ -12,6 +12,7 @@ class LableniChatbot:
         self.config_name = config_name
         self.path_to_save = path_to_save
 
+        self.sentence_to_repeat = "Puedes repetir, por favor? No te he entendido bien"
         self.chat_conversation = []
 
     def save_data(self,

@@ -77,8 +77,6 @@ BOT_TEMPERATURE = parameters_dict["BOT_TEMPERATURE"]
 BOT_FREQUENCY_PENALTY = parameters_dict["BOT_FREQUENCY_PENALTY"]
 BOT_PRESENCE_PENALTY = parameters_dict["BOT_PRESENCE_PENALTY"]
 
-SENTENCE_TO_REPEAT = "Puedes repetir, por favor? No te he entendido bien"
-
 # ### Initial message to de chatbot
 
 BOT_NAME = parameters_dict["BOT_NAME"]
@@ -208,7 +206,8 @@ my_chatbot = LableniChatbot(
 bot_result_list = []
 ct_voice_id = 0
 spanish_text = " "
-random_question_label, repeat_message_label = False, False
+# random_question_label  = False
+repeat_message_label = False
 try:
     while True:
 
@@ -239,30 +238,29 @@ try:
                 bot_answer = response["choices"][0]["text"]
                 bot_answer = ":".join(bot_answer.split(":")[:2]) if len(bot_answer.split(":")) > 2 else bot_answer
                     
-            elif random_question_label:
-                t_i_openai = time.time()
-                bot_answer = BOT_START_SEQUENCE + " " + SENTENCE_TO_REPEAT
-                t_f_openai = time.time()
+            # elif random_question_label:
+            #     t_i_openai = time.time()
+            #     bot_answer = BOT_START_SEQUENCE + " " + my_chatbot.sentence_to_repeat
+            #     t_f_openai = time.time()
                 # bot_answer = random.choices(RANDOM_QUESTIONS)[0]
                 # RANDOM_QUESTIONS = RANDOM_QUESTIONS.remove(bot_answer)
-                random_question_label = False
+            #     random_question_label = False
             else:
                 t_i_openai = time.time()
                 bot_answer = BOT_START_SEQUENCE + " " + INITIAL_MESSAGE
                 t_f_openai = time.time()
         else:
             t_i_openai = time.time()
-            bot_answer = BOT_START_SEQUENCE + " " + SENTENCE_TO_REPEAT
+            bot_answer = BOT_START_SEQUENCE + " " + my_chatbot.sentence_to_repeat
             t_f_openai = time.time()
             repeat_message_label = False
 
-        # bot_answer = "Maria: Hola, que tal estas ?"
         bot_message = bot_answer.replace(BOT_NAME + ":", "") if BOT_NAME + ":" in bot_answer else bot_answer
         bot_message = bot_message.replace("\n", "") if "\n" in bot_message else bot_message
         # bot_message = bot_message[1:] if bot_message[0] == " " else bot_message
 
         if len(bot_message) <= 2 or bot_message == "?" or bot_message == "!":
-            bot_message = SENTENCE_TO_REPEAT
+            bot_message = BOT_START_SEQUENCE + " " + my_chatbot.sentence_to_repeat
 
         bot_message = bot_message if bot_message[-1] in [".", "?", "!"] else bot_message + "."
         detect_language = google_translator.detect(bot_message)
@@ -504,8 +502,8 @@ try:
                 x = vad.get_timeline().segments_set_
                 time_start_talking = list(x)[0].start
 
-                if time_start_talking > 3.5 and (t0 - t0_start_talk) - time_start_talking <= 1:
-                    random_question_label = True
+                # if time_start_talking > 3.5 and (t0 - t0_start_talk) - time_start_talking <= 1:
+                #     random_question_label = True
             else:
                 spanish_text = " "
                 repeat_message_label = True
