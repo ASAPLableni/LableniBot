@@ -1,13 +1,10 @@
-# This script wants to initialize a Class in oorder to be global to whatever type of chatbot.
-
 import pandas as pd
+
 
 class LableniChatbot:
 
-    def __init__(self, subject_id, subject_name, mode_chat, config_name, path_to_save):
-
+    def __init__(self, subject_id, mode_chat, config_name, path_to_save):
         self.subject_id = subject_id
-        self.subject_name = subject_name
         self.mode_chat = mode_chat
         self.config_name = config_name
         self.path_to_save = path_to_save
@@ -16,14 +13,12 @@ class LableniChatbot:
         self.chat_conversation = []
 
     def save_data(self,
-        counter,
-        t_str_start, t_str_end, t_unix_start, t_unix_end, 
-        source, source_message, global_message, openai_time_s, aws_time_s, s2t_time_s, 
-        time_bot_talk, time_person_talk):
-
-        chat_conversation = self.chat_conversation.append({
+                  counter,
+                  t_str_start, t_str_end, t_unix_start, t_unix_end,
+                  source, source_message, global_message, openai_time_s, aws_time_s, s2t_time_s,
+                  time_bot_talk, time_person_talk):
+        self.chat_conversation.append({
             "ConversationSentenceId": counter,
-            "SubjectName": self.subject_name,
             "SubjectId": self.subject_id,
             "TimeInitStr": t_str_start,
             "TimeEndStr": t_str_end,
@@ -40,6 +35,5 @@ class LableniChatbot:
             "TimeBotTalk_s": time_bot_talk,
             "TimePersonTalk_s": time_person_talk
         })
-        df_to_save = pd.DataFrame(chat_conversation)
+        df_to_save = pd.DataFrame(self.chat_conversation)
         df_to_save.to_excel(self.path_to_save + ".xlsx", index=False)
-
