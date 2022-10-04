@@ -50,7 +50,10 @@ def get_google_s2t_sent(example1_sent, example1_time):
 
     keep_vec_bool = matrix_content.sum(axis=0) > 1
 
-    order_idx = np.argsort(example1_time[keep_vec_bool])
-    final_sentence = " ".join(example1_sent[keep_vec_bool][order_idx])
+    if np.sum(keep_vec_bool) > 0:
+        order_idx = np.argsort(example1_time[keep_vec_bool])
+        final_sentence = " ".join(example1_sent[keep_vec_bool][order_idx])
+    else:
+        final_sentence = " ".join(example1_sent)
 
     return final_sentence

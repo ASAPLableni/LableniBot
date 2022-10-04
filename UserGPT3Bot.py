@@ -487,10 +487,19 @@ try:
 
                 if len(response.results) > 1:
 
-                    time_vector_sent = np.array([res.result_end_time.total_seconds() for res in response.results])
-                    text_vector_sent = np.array([res.alternatives[0].transcript for res in response.results])
+                    time_vector_sent = [res.result_end_time.total_seconds() for res in response.results]
+                    text_vector_sent = [res.alternatives[0].transcript for res in response.results]
 
-                    spanish_text = ute.get_google_s2t_sent(text_vector_sent, time_vector_sent)
+                    unique_sentences, unique_time = [], []
+                    for i, text_i in enumerate(text_vector_sent):
+                        if text_i not in unique_sentences:
+                            unique_sentences.append(text_i)
+                            unique_time.append(time_vector_sent[i])
+
+                    if len(unique_sentences) > 1:
+                        spanish_text = ute.get_google_s2t_sent(np.array(unique_sentences), np.array(unique_time))
+                    else:
+                        spanish_text = unique_sentences[0]
 
                 else:
                     spanish_text = response.results[0].alternatives[0].transcript
