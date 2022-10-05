@@ -160,10 +160,10 @@ RANDOM_QUESTIONS = [q.replace("\n", "") for q in RANDOM_QUESTIONS]
 _, _, init_of_session = ute.get_current_time()
 
 OUTPUT_FILE_IN_WAVE = "audio_bot_aws.wav"  # WAV format Output file  name
-NATIVE_LENGUAGE = "es" # TODO: Put the parameter in the config or in the interface.
+NATIVE_LENGUAGE = "es"  # TODO: Put the parameter in the config or in the interface.
 
 # Modes avaible: 'voice' or 'write'.
-CHAT_MODE = "voice" # TODO: Put the parameter in the interface.
+CHAT_MODE = "voice"  # TODO: Put the parameter in the interface.
 
 # Time to wait until ask the user to repeat.
 waitTime = 15
@@ -173,7 +173,7 @@ FORMAT = pyaudio.paInt16
 CHANNELS = parameters_dict["CHANNELS"]
 RATE = parameters_dict["RATE"]
 RECORD_SECONDS = parameters_dict["RECORD_SECONDS"]
-TIME_TO_CUT = parameters_dict["TIME_TO_CUT"]
+TIME_TO_CUT = 1  # parameters_dict["TIME_TO_CUT"]
 
 # ########################
 # ### OMNIVERSE MODULE ###
@@ -225,7 +225,7 @@ try:
 
                 bot_answer = response["choices"][0]["text"]
                 bot_answer = ":".join(bot_answer.split(":")[:2]) if len(bot_answer.split(":")) > 2 else bot_answer
-                    
+
             elif random_question_label:
                 t_i_openai = time.time()
                 bot_answer = BOT_START_SEQUENCE + " " + SENTENCE_TO_REPEAT
