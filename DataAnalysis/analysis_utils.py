@@ -14,6 +14,7 @@ from scipy.spatial.distance import pdist, squareform
 from sklearn import linear_model
 from sklearn.metrics import r2_score
 
+PLT_DEFAULT_COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 def get_p_string(p):
     if p >= 0.05:

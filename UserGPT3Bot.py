@@ -1,4 +1,3 @@
-import pandas as pd
 import numpy as np
 import subprocess
 import wave
@@ -29,6 +28,7 @@ from tkinter import *
 
 from Interface import Interface
 import utils as ute
+from ChatbotGlobals import LableniChatbot
 
 # ######################################
 # ### Opening PARAMETERS CONFIG file ###
@@ -57,40 +57,56 @@ print("Subject Name", subject_name)
 bot_txt, bot_state = app.bot_config.split(" ; ")
 bot_txt_to_root, bot_state_to_root = bot_txt.replace(" ", "_"), bot_state.replace(" ", "_")
 
-root_to_parameters = "LableniBotConfig/Parameters/" + bot_txt_to_root + "/" + bot_state_to_root + ".json"
+root_to_parameters = "LableniBotConfig/Personalities/" + bot_txt_to_root + "/" + bot_state_to_root + ".json"
 
 with open(root_to_parameters, "r", encoding='utf-8') as read_file:
+    personalities_dict = json.load(read_file)
+
+CONFIG_NAME = personalities_dict["CONFIG_NAME"]
+BOT_VOICE_ID = personalities_dict["BOT_VOICE_ID"]
+ENGINE_TYPE = personalities_dict["ENGINE_TYPE"]
+
+# ### Initial message to de chatbot
+
+BOT_NAME = personalities_dict["BOT_NAME"]
+BOT_START_SEQUENCE = BOT_NAME + ":"
+
+HUMAN_NAME = personalities_dict["HUMAN_NAME"]
+HUMAN_START_SEQUENCE = HUMAN_NAME + ":"
+
+CONTEXT_MESSAGE = personalities_dict["CONTEXT_MESSAGE"]
+INITIAL_MESSAGE = personalities_dict["INITIAL_MESSAGE"]
+
+GLOBAL_MESSAGE = CONTEXT_MESSAGE + "\n"
+
+# ############################
+# ### Open Parameters dict ###
+# ############################
+
+with open("LableniBotConfig/bot_parameters.json", "r", encoding='utf-8') as read_file:
     parameters_dict = json.load(read_file)
 
 SUMMARIZE_MODULE = parameters_dict["SUMMARIZE_MODULE"]
 TRANSLATION_MODULE = parameters_dict["TRANSLATION_MODULE"]
 OMNIVERSE_MODULE = parameters_dict["OMNIVERSE_MODULE"]
 
-CONFIG_NAME = parameters_dict["CONFIG_NAME"]
 INITIAL_TOKENS_OPENAI = parameters_dict["INITIAL_TOKENS_OPENAI"]
-BOT_VOICE_ID = parameters_dict["BOT_VOICE_ID"]
-ENGINE_TYPE = parameters_dict["ENGINE_TYPE"]
-
 BOT_MODEL = parameters_dict["BOT_MODEL"]
 BOT_TEMPERATURE = parameters_dict["BOT_TEMPERATURE"]
 BOT_FREQUENCY_PENALTY = parameters_dict["BOT_FREQUENCY_PENALTY"]
 BOT_PRESENCE_PENALTY = parameters_dict["BOT_PRESENCE_PENALTY"]
 
-SENTENCE_TO_REPEAT = "Puedes repetir, por favor? No te he entendido bien"
+NATIVE_LANGUAGE = parameters_dict["NATIVE_LANGUAGE"]
 
-# ### Initial message to de chatbot
-
-BOT_NAME = parameters_dict["BOT_NAME"]
-BOT_START_SEQUENCE = BOT_NAME + ":"
-
-HUMAN_NAME = parameters_dict["HUMAN_NAME"]
-HUMAN_START_SEQUENCE = HUMAN_NAME + ":"
-
-CONTEXT_MESSAGE = parameters_dict["CONTEXT_MESSAGE"]
-INITIAL_MESSAGE = parameters_dict["INITIAL_MESSAGE"]
-counter = 0
-
-GLOBAL_MESSAGE = CONTEXT_MESSAGE + "\n"
+# Time to wait until ask the user to repeat.
+waitTime = 15
+# Audio record parameters.
+CHUNK = parameters_dict["CHUNK"]
+FORMAT = pyaudio.paInt16
+CHANNELS = parameters_dict["CHANNELS"]
+RATE = parameters_dict["RATE"]
+RECORD_SECONDS = parameters_dict["RECORD_SECONDS"]
+TIME_TO_CUT = parameters_dict["TIME_TO_CUT"]
 
 # ###########################
 # ### Opening CONFIG file ###
@@ -148,9 +164,11 @@ if SUMMARIZE_MODULE:
 # ### RANDOM QUESTIONS ###
 # ########################
 
+'''
 with open("LableniBotConfig/RandomQuestions.txt", "r", encoding='utf-8') as txt:
     RANDOM_QUESTIONS = txt.readlines()
 RANDOM_QUESTIONS = [q.replace("\n", "") for q in RANDOM_QUESTIONS]
+'''
 
 # #################
 # ### CONSTANTS ###
@@ -160,20 +178,9 @@ RANDOM_QUESTIONS = [q.replace("\n", "") for q in RANDOM_QUESTIONS]
 _, _, init_of_session = ute.get_current_time()
 
 OUTPUT_FILE_IN_WAVE = "audio_bot_aws.wav"  # WAV format Output file  name
-NATIVE_LENGUAGE = "es"  # TODO: Put the parameter in the config or in the interface.
 
 # Modes avaible: 'voice' or 'write'.
 CHAT_MODE = "voice"  # TODO: Put the parameter in the interface.
-
-# Time to wait until ask the user to repeat.
-waitTime = 15
-# Audio record parameters.
-CHUNK = parameters_dict["CHUNK"]
-FORMAT = pyaudio.paInt16
-CHANNELS = parameters_dict["CHANNELS"]
-RATE = parameters_dict["RATE"]
-RECORD_SECONDS = parameters_dict["RECORD_SECONDS"]
-TIME_TO_CUT = 1  # parameters_dict["TIME_TO_CUT"]
 
 # ########################
 # ### OMNIVERSE MODULE ###
@@ -192,21 +199,33 @@ os.mkdir(PATH_TO_DATA)
 os.mkdir(PATH_TO_DATA + "/Audios")
 WAVE_OUTPUT_FILENAME = PATH_TO_DATA + "/Audios/Subject_" + subject_id
 
+# ###################################
+# ### DEFINE OF THE CLASS CHATBOT ###
+#####################################
+
+my_chatbot = LableniChatbot(
+    subject_id=subject_id,
+    mode_chat=CHAT_MODE,
+    config_name=CONFIG_NAME,
+    path_to_save=PATH_TO_DATA + "/Conv_" + str(init_of_session)
+)
+
 bot_result_list = []
-ct_voice_id = 0
 spanish_text = " "
-random_question_label, repeat_message_label = False, False
+# random_question_label  = False
+repeat_message_label = False
 try:
     while True:
 
-        # ###########
-        # ### BOT ###
-        # ###########
+        # #############################
+        # ### BOT GENERATE SENTENCE ###
+        # #############################
 
         t_str_start, t_unix_start, _ = ute.get_current_time()
 
         if spanish_text is not None and not repeat_message_label:
-            if counter > 0 and not random_question_label:
+            # if counter > 0 and not random_question_label:
+            if my_chatbot.counter_conv_id > 0:
 
                 t_i_openai = time.time()
 
@@ -226,40 +245,43 @@ try:
                 bot_answer = response["choices"][0]["text"]
                 bot_answer = ":".join(bot_answer.split(":")[:2]) if len(bot_answer.split(":")) > 2 else bot_answer
 
-            elif random_question_label:
-                t_i_openai = time.time()
-                bot_answer = BOT_START_SEQUENCE + " " + SENTENCE_TO_REPEAT
-                t_f_openai = time.time()
-                # bot_answer = random.choices(RANDOM_QUESTIONS)[0]
-                # RANDOM_QUESTIONS = RANDOM_QUESTIONS.remove(bot_answer)
-                random_question_label = False
+            # elif random_question_label:
+            #     t_i_openai = time.time()
+            #     bot_answer = BOT_START_SEQUENCE + " " + my_chatbot.sentence_to_repeat
+            #     t_f_openai = time.time()
+            # bot_answer = random.choices(RANDOM_QUESTIONS)[0]
+            # RANDOM_QUESTIONS = RANDOM_QUESTIONS.remove(bot_answer)
+            #     random_question_label = False
+
             else:
                 t_i_openai = time.time()
-                bot_answer = BOT_START_SEQUENCE + " " + INITIAL_MESSAGE
+                bot_answer = INITIAL_MESSAGE
                 t_f_openai = time.time()
         else:
             t_i_openai = time.time()
-            bot_answer = BOT_START_SEQUENCE + " " + SENTENCE_TO_REPEAT
+            bot_answer = my_chatbot.sentence_to_repeat
             t_f_openai = time.time()
             repeat_message_label = False
 
-        # bot_answer = "Maria: Hola, que tal estas ?"
         bot_message = bot_answer.replace(BOT_NAME + ":", "") if BOT_NAME + ":" in bot_answer else bot_answer
         bot_message = bot_message.replace("\n", "") if "\n" in bot_message else bot_message
         # bot_message = bot_message[1:] if bot_message[0] == " " else bot_message
 
         if len(bot_message) <= 2 or bot_message == "?" or bot_message == "!":
-            bot_message = SENTENCE_TO_REPEAT
+            bot_message = BOT_START_SEQUENCE + " " + my_chatbot.sentence_to_repeat
 
         bot_message = bot_message if bot_message[-1] in [".", "?", "!"] else bot_message + "."
-        detect_language = google_translator.detect(bot_message)
-        if detect_language.lang != "es":
-            x = google_translator.translate(bot_message, dest=NATIVE_LENGUAGE)
-            bot_message_filtered = x.text
-        else:
+
+        try:
+            detect_language = google_translator.detect(bot_message)
+            if detect_language.lang != "es":
+                x = google_translator.translate(bot_message, dest=NATIVE_LANGUAGE)
+                bot_message_filtered = x.text
+            else:
+                bot_message_filtered = bot_message
+        except:
             bot_message_filtered = bot_message
 
-        # GLOBAL_MESSAGE += "\n" + BOT_START_SEQUENCE + " " + bot_message_filtered
         GLOBAL_MESSAGE += bot_message_filtered
         print("*** Global message *** \n", GLOBAL_MESSAGE)
 
@@ -269,32 +291,19 @@ try:
         # ### SAVE DATA ###
         # #################
 
-        # TODO: Put all this saves in the ChatbotGlobals.py script.
-        bot_result_list.append({
-            "SubjectId": subject_id,
-            "ConversationSentenceId": counter,
-            "SubjectName": subject_name,
-            "TimeInitStr": t_str_start,
-            "TimeEndStr": t_str_end,
-            "UnixTimestampInit": t_unix_start,
-            "UnixTimestampEnd": t_unix_end,
-            "Source": "Bot",
-            "SpanishMessage": bot_message_filtered,
-            # "EnglishMessage": person_message,
-            "Mode": CHAT_MODE,
-            "GlobalMessage": GLOBAL_MESSAGE,
-            "ConfigName": CONFIG_NAME,
-            "OpenAItime_s": (t_f_openai - t_i_openai),
-            "AWStime_s": np.nan,
-            "S2Ttime_s": np.nan
-        })
+        my_chatbot.save_data(
+            t_str_start=t_str_start, t_str_end=t_str_end, t_unix_start=t_unix_start, t_unix_end=t_unix_end,
+            source="Bot",
+            source_message=bot_message_filtered,
+            global_message=GLOBAL_MESSAGE,
+            openai_time_s=(t_f_openai - t_i_openai), aws_time_s=np.nan, s2t_time_s=np.nan,
+            time_bot_talk=np.nan,
+            time_person_talk=np.nan
+        )
 
-        df_to_save = pd.DataFrame(bot_result_list)
-        df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
-
-        # #################
-        # ### USING AWS ###
-        # #################
+        # ###########################
+        # ### AWS. TEXT TO SPEECH ###
+        # ###########################
 
         t_i_aws = time.time()
 
@@ -313,37 +322,37 @@ try:
 
         t_f_aws = time.time()
 
-        '''
-        with closing(response["AudioStream"]) as save_stream:
-            # output = os.path.join(gettempdir(), "speech.mp3")
-            with open(OUTPUT_FILE_IN_WAVE.replace(".wav", ".mp3"), "wb") as file:
-                file.write(save_stream.read())
+        # ##############################
+        # ### LISTEN AVATAR SENTENCE ###
+        # ##############################
 
-        # convert .mp3 to .wav
-        sound = AudioSegment.from_mp3(OUTPUT_FILE_IN_WAVE.replace(".wav", ".mp3"))
-        sound.export(OUTPUT_FILE_IN_WAVE, format="wav")
-        '''
+        t_bot_talk_start = time.time()
 
-        # #################
-        # ### OMNIVERSE ###
-        # #################
+        # The following code will save the 'response' of AWS polly in a '.wav' format.
+
+        # Initializing variables
+        OMNI_CHANNELS = 1  # Polly's output is a mono audio stream
+        WAV_SAMPLE_WIDTH_BYTES = 2  # Polly's output is a stream of 16-bits (2 bytes) samples
+        FRAMES = []
+
+        # Processing the response to audio stream
+        STREAM = response.get("AudioStream")
+        FRAMES.append(STREAM.read())
+        # TODO: Save these audios as the subjects audios are saved.
+        root_bot_audio = ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE if OMNIVERSE_MODULE else OUTPUT_FILE_IN_WAVE
+
+        WAVE_FORMAT = wave.open(root_bot_audio, 'wb')
+        WAVE_FORMAT.setnchannels(OMNI_CHANNELS)
+        WAVE_FORMAT.setsampwidth(WAV_SAMPLE_WIDTH_BYTES)
+        WAVE_FORMAT.setframerate(RATE)
+        WAVE_FORMAT.writeframes(b''.join(FRAMES))
+        WAVE_FORMAT.close()
+
         if OMNIVERSE_MODULE:
 
-            # Initializing variables
-            OMNI_CHANNELS = 1  # Polly's output is a mono audio stream
-            WAV_SAMPLE_WIDTH_BYTES = 2  # Polly's output is a stream of 16-bits (2 bytes) samples
-            FRAMES = []
-
-            # Processing the response to audio stream
-            STREAM = response.get("AudioStream")
-            FRAMES.append(STREAM.read())
-
-            WAVE_FORMAT = wave.open(ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE, 'wb')
-            WAVE_FORMAT.setnchannels(OMNI_CHANNELS)
-            WAVE_FORMAT.setsampwidth(WAV_SAMPLE_WIDTH_BYTES)
-            WAVE_FORMAT.setframerate(RATE)
-            WAVE_FORMAT.writeframes(b''.join(FRAMES))
-            WAVE_FORMAT.close()
+            # #################
+            # ### OMNIVERSE ###
+            # #################
 
             # OMNIVERSE_AVATAR = "/Woman/audio_player_streaming"
             call_to_omniverse = " python " + ROOT_TO_OMNIVERSE + "/my_test_client.py "
@@ -352,24 +361,13 @@ try:
             # print(call_to_omniverse)
             subprocess.call(call_to_omniverse, shell=True)
         else:
-            # Initializing variables
-            OMNI_CHANNELS = 1  # Polly's output is a mono audio stream
-            WAV_SAMPLE_WIDTH_BYTES = 2  # Polly's output is a stream of 16-bits (2 bytes) samples
-            FRAMES = []
 
-            # Processing the response to audio stream
-            STREAM = response.get("AudioStream")
-            FRAMES.append(STREAM.read())
-
-            WAVE_FORMAT = wave.open(OUTPUT_FILE_IN_WAVE, 'wb')
-            WAVE_FORMAT.setnchannels(OMNI_CHANNELS)
-            WAVE_FORMAT.setsampwidth(WAV_SAMPLE_WIDTH_BYTES)
-            WAVE_FORMAT.setframerate(RATE)
-            WAVE_FORMAT.writeframes(b''.join(FRAMES))
-            WAVE_FORMAT.close()
+            # ###############
+            # ### PYAUDIO ###
+            # ###############
 
             # open a wav format music
-            f = wave.open(OUTPUT_FILE_IN_WAVE, "rb")
+            f = wave.open(root_bot_audio, "rb")
             # instantiate PyAudio
             p = pyaudio.PyAudio()
             # open stream
@@ -391,12 +389,15 @@ try:
             # close PyAudio
             p.terminate()
 
-        # #############
-        # ### HUMAN ###
-        # #############
+        t_bot_talk_end = time.time()
+
+        # ##################
+        # ### HUMAN TALK ###
+        # ##################
 
         t_str_start, t_unix_start, _ = ute.get_current_time()
 
+        t_person_talk_start = time.time()
         if CHAT_MODE == "voice":
 
             t0 = time.time()
@@ -416,17 +417,21 @@ try:
                 data = stream.read(CHUNK)  # , exception_on_overflow=False
                 frames.append(data)
 
-                # Silence Detection module
+                # ################################
+                # ### SILENCE DETECTION MODULE ###
+                # ################################
                 if time.time() - t0 > 3:
 
-                    wf = wave.open(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav", 'wb')
+                    wf = wave.open(WAVE_OUTPUT_FILENAME + "_T=" + str(my_chatbot.counter_conv_id) + ".wav", 'wb')
                     wf.setnchannels(CHANNELS)
                     wf.setsampwidth(p.get_sample_size(FORMAT))
                     wf.setframerate(RATE)
                     wf.writeframes(b''.join(frames))
                     wf.close()
 
-                    vad = silence_detection_pipeline(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav")
+                    vad = silence_detection_pipeline(
+                        WAVE_OUTPUT_FILENAME + "_T=" + str(my_chatbot.counter_conv_id) + ".wav"
+                    )
 
                     x = vad.get_timeline().segments_set_
 
@@ -446,7 +451,9 @@ try:
             stream.close()
             p.terminate()
 
-            wf = wave.open(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav", 'wb')
+            # Save the audio of the subject.
+            subject_speech_file = WAVE_OUTPUT_FILENAME + "_T=" + str(my_chatbot.counter_conv_id) + ".wav"
+            wf = wave.open(subject_speech_file, 'wb')
             wf.setnchannels(CHANNELS)
             wf.setsampwidth(p.get_sample_size(FORMAT))
             wf.setframerate(RATE)
@@ -455,15 +462,18 @@ try:
 
             t_i_s2t = time.time()
 
-            speech_file = WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav"
-            with open(speech_file, "rb") as audio_file:
+            # #############################
+            # ### GOOGLE SPEECH TO TEXT ###
+            # #############################
+
+            with open(subject_speech_file, "rb") as audio_file:
                 content = audio_file.read()
             audio = speech.RecognitionAudio(content=content)
 
             google_config = speech.RecognitionConfig(
                 encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
                 # sample_rate_hertz=44100,
-                language_code=NATIVE_LENGUAGE + "-EU",
+                language_code=NATIVE_LANGUAGE + "-EU",
                 audio_channel_count=2,
                 enable_separate_recognition_per_channel=True,
                 enable_automatic_punctuation=True
@@ -472,22 +482,41 @@ try:
 
             t_f_s2t = time.time()
 
+            # If 'response' has something inside.
             if len(response.results) > 0:
                 repeat_message_label = False
-                spanish_text = response.results[0].alternatives[0].transcript
 
-                vad = silence_detection_pipeline(WAVE_OUTPUT_FILENAME + "_T=" + str(ct_voice_id) + ".wav")
-                x = vad.get_timeline().segments_set_
-                time_start_talking = list(x)[0].start
+                if len(response.results) > 1:
 
-                if time_start_talking > 3.5 and (t0 - t0_start_talk) - time_start_talking <= 1:
-                    random_question_label = True
+                    time_vector_sent = [res.result_end_time.total_seconds() for res in response.results]
+                    text_vector_sent = [res.alternatives[0].transcript for res in response.results]
+
+                    unique_sentences, unique_time = [], []
+                    for i, text_i in enumerate(text_vector_sent):
+                        if text_i not in unique_sentences:
+                            unique_sentences.append(text_i)
+                            unique_time.append(time_vector_sent[i])
+
+                    if len(unique_sentences) > 1:
+                        spanish_text = ute.get_google_s2t_sent(np.array(unique_sentences), np.array(unique_time))
+                    else:
+                        spanish_text = unique_sentences[0]
+
+                else:
+                    spanish_text = response.results[0].alternatives[0].transcript
+
+                # vad = silence_detection_pipeline(
+                #     WAVE_OUTPUT_FILENAME + "_T=" + str(my_chatbot.counter_conv_id) + ".wav"
+                # )
+                # x = vad.get_timeline().segments_set_
+                # time_start_talking = list(x)[0].start
+
+                # if time_start_talking > 3.5 and (t0 - t0_start_talk) - time_start_talking <= 1:
+                #     random_question_label = True
             else:
+                # Here means that Google S2T did not find any message.
                 spanish_text = " "
                 repeat_message_label = True
-
-            # spanish_text = r.recognize_google(audio, language=NATIVE_LENGUAGE + "-EU")
-            ct_voice_id += 1
 
         elif CHAT_MODE == "write":
             print("Write something....")
@@ -498,6 +527,8 @@ try:
             t_f_s2t, t_i_s2t = 0, 0
             print("Please select between 'write' or 'voice' method")
             break
+
+        t_person_talk_end = time.time()
 
         t_str_end, t_unix_end, _ = ute.get_current_time()
 
@@ -516,34 +547,22 @@ try:
         GLOBAL_MESSAGE += "\n" + HUMAN_START_SEQUENCE + " " + person_message
         print("*** Global message *** \n", GLOBAL_MESSAGE)
 
-        # To start the message with Bot sequence.
-        GLOBAL_MESSAGE += "\n" + BOT_START_SEQUENCE
+        GLOBAL_MESSAGE += "\n" + BOT_START_SEQUENCE + " "
 
-        bot_result_list.append({
-            "SubjectId": subject_id,
-            "ConversationSentenceId": counter,
-            "SubjectName": subject_name,
-            "TimeInitStr": t_str_start,
-            "TimeEndStr": t_str_end,
-            "UnixTimestampInit": t_unix_start,
-            "UnixTimestampEnd": t_unix_end,
-            "Source": "Person",
-            "SpanishMessage": spanish_text,
-            # "EnglishMessage": person_message,
-            "Mode": CHAT_MODE,
-            "GlobalMessage": GLOBAL_MESSAGE,
-            "ConfigName": CONFIG_NAME,
-            "OpenAItime_s": np.nan,
-            "AWStime_s": (t_f_aws - t_i_aws),
-            "S2Ttime_s": (t_f_s2t - t_i_s2t),
-        })
-        df_to_save = pd.DataFrame(bot_result_list)
-        df_to_save.to_excel(PATH_TO_DATA + "/Conv_" + str(init_of_session) + ".xlsx", index=False)
+        my_chatbot.save_data(
+            t_str_start=t_str_start, t_str_end=t_str_end, t_unix_start=t_unix_start, t_unix_end=t_unix_end,
+            source="Person",
+            source_message=spanish_text,
+            global_message=GLOBAL_MESSAGE,
+            openai_time_s=np.nan, aws_time_s=(t_f_aws - t_i_aws), s2t_time_s=(t_f_s2t - t_i_s2t),
+            time_bot_talk=(t_bot_talk_end - t_bot_talk_start),
+            time_person_talk=(t_person_talk_end - t_person_talk_start)
+        )
 
         # ##################
         # ### SUMMARIZER ###
         # ##################
-
+        '''
         if SUMMARIZE_MODULE:
             n_data = df_to_save.shape[0]
             if n_data >= 8:
@@ -566,8 +585,13 @@ try:
 
                     print("*** Summary ***", whole_answer + " " + whole_text_small)
                     GLOBAL_MESSAGE = CONTEXT_MESSAGE + " " + whole_answer + " " + whole_text_small
-
-        counter += 1
+        '''
+        # ##################
+        # ### COUNTER ID ###
+        # ##################
+        # This counter identifies the iteration of the conversation. If Bot and Human have talked,
+        # another iteration starts.
+        my_chatbot.counter_conv_id += 1
 
         if person_message == "Adiós" or person_message == "Hasta luego" or person_message == "Adios":
             break
