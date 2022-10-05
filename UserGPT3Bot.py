@@ -72,7 +72,7 @@ BOT_NAME = personalities_dict["BOT_NAME"]
 BOT_START_SEQUENCE = BOT_NAME + ":"
 
 HUMAN_NAME = personalities_dict["HUMAN_NAME"]
-HUMAN_START_SEQUENCE = HUMAN_NAME + ":"
+HUMAN_START_SEQUENCE = subject_name + ":"
 
 CONTEXT_MESSAGE = personalities_dict["CONTEXT_MESSAGE"]
 INITIAL_MESSAGE = personalities_dict["INITIAL_MESSAGE"]
@@ -143,6 +143,7 @@ HYPER_PARAMETERS = {
     "min_duration_off": 0.0
 }
 silence_detection_pipeline.instantiate(HYPER_PARAMETERS)
+_ = silence_detection_pipeline("audio_bot_aws.wav")
 
 # ##########################
 # ### TRANSLATION MODULE ###
@@ -188,7 +189,7 @@ CHAT_MODE = "voice"  # TODO: Put the parameter in the interface.
 
 if OMNIVERSE_MODULE:
     ROOT_TO_OMNIVERSE = config_dict["ROOT_TO_OMNIVERSE"]
-    OMNIVERSE_AVATAR = parameters_dict["OMNIVERSE_AVATAR"]
+    OMNIVERSE_AVATAR = personalities_dict["OMNIVERSE_AVATAR"]
 
 # ##############
 # ### INPUTS ###
@@ -224,7 +225,6 @@ try:
         t_str_start, t_unix_start, _ = ute.get_current_time()
 
         if spanish_text is not None and not repeat_message_label:
-            # if counter > 0 and not random_question_label:
             if my_chatbot.counter_conv_id > 0:
 
                 t_i_openai = time.time()
@@ -244,14 +244,6 @@ try:
 
                 bot_answer = response["choices"][0]["text"]
                 bot_answer = ":".join(bot_answer.split(":")[:2]) if len(bot_answer.split(":")) > 2 else bot_answer
-
-            # elif random_question_label:
-            #     t_i_openai = time.time()
-            #     bot_answer = BOT_START_SEQUENCE + " " + my_chatbot.sentence_to_repeat
-            #     t_f_openai = time.time()
-            # bot_answer = random.choices(RANDOM_QUESTIONS)[0]
-            # RANDOM_QUESTIONS = RANDOM_QUESTIONS.remove(bot_answer)
-            #     random_question_label = False
 
             else:
                 t_i_openai = time.time()
@@ -412,7 +404,16 @@ try:
                             frames_per_buffer=CHUNK)
 
             print("*** Recording ***")
+
             frames = []
+
+            wf = wave.open(WAVE_OUTPUT_FILENAME + "_T=" + str(my_chatbot.counter_conv_id) + ".wav", 'wb')
+            wf.setnchannels(CHANNELS)
+            wf.setsampwidth(p.get_sample_size(FORMAT))
+            wf.setframerate(RATE)
+            wf.writeframes(b''.join(frames))
+            wf.close()
+
             for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
                 data = stream.read(CHUNK)  # , exception_on_overflow=False
                 frames.append(data)
@@ -421,7 +422,6 @@ try:
                 # ### SILENCE DETECTION MODULE ###
                 # ################################
                 if time.time() - t0 > 3:
-
                     wf = wave.open(WAVE_OUTPUT_FILENAME + "_T=" + str(my_chatbot.counter_conv_id) + ".wav", 'wb')
                     wf.setnchannels(CHANNELS)
                     wf.setsampwidth(p.get_sample_size(FORMAT))
@@ -474,7 +474,7 @@ try:
                 encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
                 # sample_rate_hertz=44100,
                 language_code=NATIVE_LANGUAGE + "-EU",
-                audio_channel_count=2,
+                audio_channel_count=1,
                 enable_separate_recognition_per_channel=True,
                 enable_automatic_punctuation=True
             )
