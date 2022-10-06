@@ -2,8 +2,11 @@ from datetime import datetime
 import numpy as np
 
 
-def get_current_time():
+def get_current_time(only_unix=False, get_time_str=False):
     t = datetime.now()
+
+    if only_unix:
+        return t.timestamp()
 
     year = str(t.year)
 
@@ -25,20 +28,11 @@ def get_current_time():
     mili_sec = str(t.microsecond)
 
     date_str = year + "-" + month + "-" + day + " " + hour + ":" + mint + ":" + sec + "." + mili_sec
-    date_str_other_form = year + month + day + "_" + hour + mint + sec + "." + mili_sec[:3]
 
-    return date_str, t.timestamp(), date_str_other_form
+    if get_time_str:
+        return year + month + day + "_" + hour + mint + sec
 
-
-def from_str_to_was_polly_pcm(input_str):
-    input_str_aws = input_str
-    input_str_aws = input_str_aws.replace("?", ".").replace("¿", ".")
-    input_str_aws = input_str_aws.replace('.', '<break time="0.6s"/>')
-    input_str_aws = input_str_aws.replace(',', '<break time="0.25s"/>')
-    input_str_aws = '<prosody rate="slow">' + input_str_aws + '</prosody>'
-    input_str_aws = "<speak>" + input_str_aws + "</speak>"
-
-    return input_str_aws
+    return date_str, t.timestamp()
 
 
 def get_google_s2t_sent(example1_sent, example1_time):
@@ -57,3 +51,14 @@ def get_google_s2t_sent(example1_sent, example1_time):
         final_sentence = " ".join(example1_sent)
 
     return final_sentence
+
+
+def check_repetition_s2t(response_results):
+    unique_sentences, unique_time = [], []
+    for res in response_results:
+        text_i = res.alternatives[0].transcript
+        if text_i not in unique_sentences:
+            unique_sentences.append(text_i)
+            unique_time.append(res.result_end_time.total_seconds())
+
+    return np.array(unique_sentences), np.array(unique_time)
