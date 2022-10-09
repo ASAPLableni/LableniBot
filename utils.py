@@ -1,5 +1,7 @@
 from datetime import datetime
 import numpy as np
+import wave
+import pyaudio
 
 
 def get_current_time(only_unix=False, get_time_str=False):
@@ -62,3 +64,60 @@ def check_repetition_s2t(response_results):
             unique_time.append(res.result_end_time.total_seconds())
 
     return np.array(unique_sentences), np.array(unique_time)
+
+
+def process_googles2t_answer(resp_res):
+    # If 'response' has something inside.
+    if len(resp_res) > 0:
+        repeat_message_label = False
+
+        if len(resp_res) > 1:
+
+            uniq_sentences_array, uniq_time_array = check_repetition_s2t(resp_res)
+
+            if len(uniq_sentences_array) > 1:
+                # There is more than one answer in Google S2T result.
+                spanish_text = get_google_s2t_sent(uniq_sentences_array, uniq_time_array)
+            else:
+                # There is only one answer in Google S2T result.
+                spanish_text = uniq_sentences_array[0]
+
+        else:
+            spanish_text = resp_res[0].alternatives[0].transcript
+
+    else:
+        # Here means that Google S2T did not find any message.
+        spanish_text = " "
+        repeat_message_label = True
+
+    return spanish_text, repeat_message_label
+
+
+def reproduce_audio(root_bot_audio, CHUNK):
+
+        # ###############
+        # ### PYAUDIO ###
+        # ###############
+
+        # open a wav format music
+        f = wave.open(root_bot_audio, "rb")
+        # instantiate PyAudio
+        p = pyaudio.PyAudio()
+        # open stream
+        stream = p.open(format=p.get_format_from_width(f.getsampwidth()),
+                        channels=f.getnchannels(),
+                        rate=f.getframerate(),
+                        output=True)
+        # read data
+        data = f.readframes(CHUNK)
+
+        # play stream
+        while data:
+            stream.write(data)
+            data = f.readframes(CHUNK)
+            # stop stream
+        stream.stop_stream()
+        stream.close()
+
+        # close PyAudio
+        p.terminate()

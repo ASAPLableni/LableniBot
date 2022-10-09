@@ -1,9 +1,10 @@
 import pandas as pd
+import utils as ute
 
 
 class LableniBot:
 
-    def __init__(self, subject_id, mode_chat, config_name, global_message, path_to_save):
+    def __init__(self, subject_id, mode_chat, config_name, global_message, aws_prosody, path_to_save):
         self.subject_id = subject_id
         self.mode_chat = mode_chat
         self.config_name = config_name
@@ -13,7 +14,7 @@ class LableniBot:
         self.sentence_to_repeat = "Puedes repetir, por favor? No te he entendido bien"
         self.chat_conversation = []
         self.counter_conv_id = 0
-        self.aws_prosody = "slow"
+        self.aws_prosody = aws_prosody
 
     def append_data(self,
                     t_str_loop_start, t_unix_loop_start,
@@ -23,11 +24,16 @@ class LableniBot:
                     s2t_start_unix, s2t_end_unix,
                     bot_talk_start_unix, bot_talk_end_unix,
                     person_talk_start_unix, person_talk_end_unix):
+
+        t_str_loop_save, t_unix_loop_save = ute.get_current_time()
+        
         self.chat_conversation.append({
             "ConversationSentenceId": self.counter_conv_id,
             "SubjectId": self.subject_id,
             "TimeLoopInitStr": t_str_loop_start,
             "UnixTimestampLoopInit": t_unix_loop_start,
+            "TimeSaveStr": t_str_loop_save,
+            "UnixTimeSave": t_unix_loop_save,
             "Source": source,
             "SpanishMessage": source_message,
             "Mode": self.mode_chat,
@@ -46,8 +52,7 @@ class LableniBot:
         })
 
     def save_data(self):
-        df_to_save = pd.DataFrame(self.chat_conversation)
-        df_to_save.to_pickle(self.path_to_save + ".pkl")
+        pd.DataFrame(self.chat_conversation).to_pickle(self.path_to_save + ".pkl")
 
     def from_str_to_aws_polly_pcm(self, input_str):
         input_str_aws = input_str
