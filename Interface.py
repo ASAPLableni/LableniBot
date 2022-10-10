@@ -79,11 +79,11 @@ class Interface(Frame):
         menu_male_2.add_command(label="Neutral 3", command=lambda: self.select_bot("Neutral", "Neutral 3"))
         file_menu.add_cascade(label="Neutral", menu=menu_male_2)
 
-        Label(self.master, text="Plase enter subject's name").pack()
+        Label(self.master, text="Please enter subject's name").pack()
         entry_name = Entry(self.master)
         entry_name.pack()
 
-        Label(self.master, text="Plase enter subject's Id").pack()
+        Label(self.master, text="Please enter subject's Id").pack()
         entry_id = Entry(self.master)
         entry_id.pack()
 

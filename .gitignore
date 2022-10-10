@@ -13,6 +13,7 @@ __pycache__
 venv/
 *.csv
 *.mp3
+*.pkl
 google_api.json
 *.idea/
 avoid_words.json
