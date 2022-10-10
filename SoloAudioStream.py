@@ -1,7 +1,7 @@
 import subprocess
 import json
 
-config_json = open('config.json')
+config_json = open('LableniBotConfig/config.json')
 config_dict = json.load(config_json)
 
 ROOT_TO_OMNIVERSE = config_dict["ROOT_TO_OMNIVERSE"]
@@ -23,8 +23,8 @@ call_to_omniverse = " python " + ROOT_TO_OMNIVERSE + "/my_test_client.py"
 # /World/audio_player_streaming
 
 
-AUDIO_NAME = "AudioExamples/audio_bot_aws.wav"
-OMNIVERSE_AVATAR = "/Woman/audio_player_streaming"
+AUDIO_NAME = "audio_bot_aws.wav"
+OMNIVERSE_AVATAR = "/WomanSF_Neutral/audio_player_streaming"
 
 call_to_omniverse += " " + AUDIO_NAME + " " + OMNIVERSE_AVATAR
 print("Message to Omniverse ", call_to_omniverse)
