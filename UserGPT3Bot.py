@@ -64,13 +64,13 @@ with open(root_to_parameters, "r", encoding='utf-8') as read_file:
 CONFIG_NAME = personalities_dict["CONFIG_NAME"]
 BOT_VOICE_ID = personalities_dict["BOT_VOICE_ID"]
 ENGINE_TYPE = personalities_dict["ENGINE_TYPE"]
+AWS_PROSODY = personalities_dict["AWS_PROSODY"]
 
 # ### Initial message to de chatbot
 
 BOT_NAME = personalities_dict["BOT_NAME"]
 BOT_START_SEQUENCE = BOT_NAME + ":"
 
-HUMAN_NAME = personalities_dict["HUMAN_NAME"]
 HUMAN_START_SEQUENCE = subject_name + ":"
 
 CONTEXT_MESSAGE = personalities_dict["CONTEXT_MESSAGE"]
@@ -186,12 +186,12 @@ my_chatbot = LableniBot(
     mode_chat=CHAT_MODE,
     config_name=CONFIG_NAME,
     global_message=CONTEXT_MESSAGE + "\n",
+    aws_prosody=AWS_PROSODY,
     path_to_save=PATH_TO_DATA + "/Conv_" + str(init_of_session),
 )
 
 bot_result_list = []
 spanish_text = " "
-# random_question_label  = False
 repeat_message_label = False
 try:
     while True:
@@ -314,33 +314,7 @@ try:
             # call_to_omniverse += " " + OUTPUT_FILE_IN_WAVE.replace(".wav", ".mp3") + " " + OMNIVERSE_AVATAR
             subprocess.call(call_to_omniverse, shell=True)
         else:
-
-            # ###############
-            # ### PYAUDIO ###
-            # ###############
-
-            # open a wav format music
-            f = wave.open(root_bot_audio, "rb")
-            # instantiate PyAudio
-            p = pyaudio.PyAudio()
-            # open stream
-            stream = p.open(format=p.get_format_from_width(f.getsampwidth()),
-                            channels=f.getnchannels(),
-                            rate=f.getframerate(),
-                            output=True)
-            # read data
-            data = f.readframes(CHUNK)
-
-            # play stream
-            while data:
-                stream.write(data)
-                data = f.readframes(CHUNK)
-                # stop stream
-            stream.stop_stream()
-            stream.close()
-
-            # close PyAudio
-            p.terminate()
+            ute.reproduce_audio(root_bot_audio, CHUNK)
 
         t_bot_talk_end = ute.get_current_time(only_unix=True)
 
@@ -458,26 +432,7 @@ try:
 
             t_f_s2t = ute.get_current_time(only_unix=True)
 
-            # If 'response' has something inside.
-            if len(response.results) > 0:
-                repeat_message_label = False
-
-                if len(response.results) > 1:
-
-                    unique_sentences_array, unique_time_array = ute.check_repetition_s2t(response.results)
-
-                    if len(unique_sentences_array) > 1:
-                        spanish_text = ute.get_google_s2t_sent(unique_sentences_array, unique_time_array)
-                    else:
-                        spanish_text = unique_sentences_array[0]
-
-                else:
-                    spanish_text = response.results[0].alternatives[0].transcript
-
-            else:
-                # Here means that Google S2T did not find any message.
-                spanish_text = " "
-                repeat_message_label = True
+            spanish_text, repeat_message_label = ute.process_googles2t_answer(response.results)
 
         elif CHAT_MODE == "write":
             print("Write something....")
@@ -516,7 +471,7 @@ try:
         )
         my_chatbot.save_data()
 
-        print(" *** Data saved *** ")
+        print("*** Data saved *** ")
 
         # ##################
         # ### COUNTER ID ###
