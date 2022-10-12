@@ -94,30 +94,29 @@ def process_googles2t_answer(resp_res):
 
 
 def reproduce_audio(root_bot_audio, CHUNK):
+    # ###############
+    # ### PYAUDIO ###
+    # ###############
 
-        # ###############
-        # ### PYAUDIO ###
-        # ###############
+    # open a wav format music
+    f = wave.open(root_bot_audio, "rb")
+    # instantiate PyAudio
+    p = pyaudio.PyAudio()
+    # open stream
+    stream = p.open(format=p.get_format_from_width(f.getsampwidth()),
+                    channels=f.getnchannels(),
+                    rate=f.getframerate(),
+                    output=True)
+    # read data
+    data = f.readframes(CHUNK)
 
-        # open a wav format music
-        f = wave.open(root_bot_audio, "rb")
-        # instantiate PyAudio
-        p = pyaudio.PyAudio()
-        # open stream
-        stream = p.open(format=p.get_format_from_width(f.getsampwidth()),
-                        channels=f.getnchannels(),
-                        rate=f.getframerate(),
-                        output=True)
-        # read data
+    # play stream
+    while data:
+        stream.write(data)
         data = f.readframes(CHUNK)
+        # stop stream
+    stream.stop_stream()
+    stream.close()
 
-        # play stream
-        while data:
-            stream.write(data)
-            data = f.readframes(CHUNK)
-            # stop stream
-        stream.stop_stream()
-        stream.close()
-
-        # close PyAudio
-        p.terminate()
+    # close PyAudio
+    p.terminate()

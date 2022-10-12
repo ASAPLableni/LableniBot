@@ -6,7 +6,6 @@ class BeginInterface(Frame):
         Frame.__init__(self, master)
         self.master = master
         self.subject_id = ""
-        self.task = ""
         self.create_menus()
 
     def create_menus(self):
@@ -14,25 +13,37 @@ class BeginInterface(Frame):
         entry_id = Entry(self.master)
         entry_id.pack()
 
-        Label(self.master, text="Enter your task").pack()
-        entry_task = Entry(self.master)
-        entry_task.pack()
-
-        button_close = Button(self.master, text="Done !", command=lambda: self.close_app(entry_id, entry_task))
-        # button_close.grid(column=1, row=0, sticky='e', padx=100, pady=2)
+        button_close = Button(self.master, text="Start recording open eyes!", command=lambda: self.close_app(entry_id))
         button_close.pack()
 
-    def close_app(self, entry_id, entry_task):
+    def close_app(self, entry_id):
         self.subject_id = entry_id.get()
-        self.task = entry_task.get()
         self.master.destroy()
 
-# root = Tk()
-# root.title("LabLeni BOT")
-# root.geometry("400x400")
 
-# app = Interface(master=root)
+class SecondInterface(Frame):
+    def __init__(self, master):
+        Frame.__init__(self, master)
+        self.master = master
+        self.create_menus()
 
-# app.mainloop()
+    def create_menus(self):
+        button_close = Button(self.master, text="Start recording closed eyes!", command=self.close_app)
+        button_close.pack()
 
-# print(app.bot_config)
+    def close_app(self):
+        self.master.destroy()
+
+
+class EndInterface(Frame):
+    def __init__(self, master):
+        Frame.__init__(self, master)
+        self.master = master
+        self.create_menus()
+
+    def create_menus(self):
+        button_close = Button(self.master, text="Finish", command=self.close_app)
+        button_close.pack()
+
+    def close_app(self):
+        self.master.destroy()

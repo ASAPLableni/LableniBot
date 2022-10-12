@@ -5,6 +5,7 @@ import time
 import pyaudio
 import os
 import json
+import pickle
 # import sys
 # import random
 # import pyttsx3
@@ -171,11 +172,33 @@ if OMNIVERSE_MODULE:
 # ##############
 
 # Begin of the session
-init_of_session = ute.get_current_time(get_time_str=True)
-PATH_TO_DATA = "Conversations/" + subject_id + "_" + str(init_of_session)
-os.mkdir(PATH_TO_DATA)
-os.mkdir(PATH_TO_DATA + "/Audios")
-WAVE_OUTPUT_FILENAME = PATH_TO_DATA + "/Audios/Subject_" + subject_id
+PATH_TO_DATA = "Conversations/" + subject_id
+if not os.path.exists(PATH_TO_DATA):
+    os.mkdir(PATH_TO_DATA)
+
+init_time = ute.get_current_time(get_time_str=True)
+init_str_time, unix_time = ute.get_current_time()
+SUB_PATH_TO_DATA = PATH_TO_DATA + "/" + subject_id + "_" + init_time
+os.mkdir(SUB_PATH_TO_DATA)
+
+# Create Audios folder
+os.mkdir(SUB_PATH_TO_DATA + "/Audios")
+WAVE_OUTPUT_FILENAME = SUB_PATH_TO_DATA + "/Audios/Subject_" + subject_id
+os.mkdir(SUB_PATH_TO_DATA + "/BotAudios")
+WAVE_OUTPUT_FILENAME_BOT = SUB_PATH_TO_DATA + "/BotAudios/BotSubject_" + subject_id
+
+with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'rb') as f:
+    guide_of_times = pickle.load(f)
+
+guide_of_times.update({
+    CONFIG_NAME: {
+        "InitRealTimeStr": init_str_time,
+        "InitUnixTime": unix_time,
+    }
+})
+
+with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'wb') as handle:
+    pickle.dump(guide_of_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # ################################
 # ### DEFINE THE CLASS CHATBOT ###
@@ -187,7 +210,7 @@ my_chatbot = LableniBot(
     config_name=CONFIG_NAME,
     global_message=CONTEXT_MESSAGE + "\n",
     aws_prosody=AWS_PROSODY,
-    path_to_save=PATH_TO_DATA + "/Conv_" + str(init_of_session),
+    path_to_save=SUB_PATH_TO_DATA + "/Conv_" + str(init_time),
 )
 
 bot_result_list = []
