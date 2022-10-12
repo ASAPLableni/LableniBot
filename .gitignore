@@ -2,6 +2,7 @@
 Roots.txt
 Conversations/
 OldConversations/
+ConversationsToCSV/
 Documents/
 Videos/
 *.wav
