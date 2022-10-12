@@ -77,6 +77,14 @@ HUMAN_START_SEQUENCE = subject_name + ":"
 CONTEXT_MESSAGE = personalities_dict["CONTEXT_MESSAGE"]
 INITIAL_MESSAGE = personalities_dict["INITIAL_MESSAGE"]
 
+if app.change_avatar_name:
+
+    CONTEXT_MESSAGE = CONTEXT_MESSAGE.replace(BOT_NAME, app.avatar_name)
+    INITIAL_MESSAGE = INITIAL_MESSAGE.replace(BOT_NAME, app.avatar_name)
+
+    BOT_NAME = app.avatar_name
+    BOT_START_SEQUENCE = BOT_NAME + ":"
+
 # ############################
 # ### Open Parameters dict ###
 # ############################

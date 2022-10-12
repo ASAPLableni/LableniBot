@@ -8,6 +8,8 @@ class Interface(Frame):
         self.bot_config = "Neutral"
         self.subject_name = ""
         self.subject_id = ""
+        self.change_avatar_name = False
+        self.avatar_name = ""
         self.create_menus()
 
     def select_bot(self, bot_txt, bot_state):
@@ -48,13 +50,18 @@ class Interface(Frame):
         file_menu.add_separator()
 
         menu_female_2 = Menu(my_menu)
-        menu_female_2.add_command(label="Happy State", command=lambda: self.select_bot("Female Bot 2", "Happy State"))
+        menu_female_2.add_command(label="Happy State",
+                                  command=lambda: self.select_bot("Female Bot 2", "Happy State"))
         menu_female_2.add_separator()
-        menu_female_2.add_command(label="Sad State", command=lambda: self.select_bot("Female Bot 2", "Sad State"))
+        menu_female_2.add_command(label="Sad State",
+                                  command=lambda: self.select_bot("Female Bot 2", "Sad State"))
         menu_female_2.add_separator()
-        menu_female_2.add_command(label="Relax State", command=lambda: self.select_bot("Female Bot 2", "Relax State"))
+        female_relax = "Relax State (Name)"
+        menu_female_2.add_command(label=female_relax,
+                                  command=lambda: self.select_bot("Female Bot 2", "Relax State"))
         menu_female_2.add_separator()
-        menu_female_2.add_command(label="Angry State", command=lambda: self.select_bot("Female Bot 2", "Angry State"))
+        menu_female_2.add_command(label="Angry State",
+                                  command=lambda: self.select_bot("Female Bot 2", "Angry State"))
         file_menu.add_cascade(label="Female Bot 2", menu=menu_female_2)
 
         file_menu.add_separator()
@@ -87,13 +94,22 @@ class Interface(Frame):
         entry_id = Entry(self.master)
         entry_id.pack()
 
-        button_close = Button(self.master, text="Done !", command=lambda: self.close_app(entry_name, entry_id))
+        Label(self.master, text="Write only if you want to change Avatar name").pack()
+        entry_avatar_name = Entry(self.master)
+        entry_avatar_name.pack()
+
+        button_close = Button(self.master,
+                              text="Done !",
+                              command=lambda: self.close_app(entry_name, entry_id, entry_avatar_name))
         # button_close.grid(column=1, row=0, sticky='e', padx=100, pady=2)
         button_close.pack()
 
-    def close_app(self, entry_name, entry_id):
+    def close_app(self, entry_name, entry_id, entry_avatar_name):
         self.subject_name = entry_name.get()
         self.subject_id = entry_id.get()
+        self.avatar_name = entry_avatar_name.get()
+        if len(self.avatar_name) > 1:
+            self.change_avatar_name = True
         self.master.destroy()
 
 # root = Tk()
