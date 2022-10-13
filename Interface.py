@@ -1,9 +1,15 @@
 from tkinter import *
+import json
+import os
 
 
 class Interface(Frame):
     def __init__(self, master):
         Frame.__init__(self, master)
+
+        self.names_personalities_dict = {}
+        self.get_chatbots_names()
+
         self.master = master
         self.bot_config = "Neutral"
         self.subject_name = ""
@@ -11,6 +17,24 @@ class Interface(Frame):
         self.change_avatar_name = False
         self.avatar_name = ""
         self.create_menus()
+
+    def get_chatbots_names(self):
+
+        all_folders_list = ["Female_Bot_1", "Female_Bot_2", "Male_Bot_1", "Male_Bot_2", "Neutral"]
+        for f in all_folders_list:
+
+            f_space = f.replace("_", " ")
+            self.names_personalities_dict[f_space] = {}
+
+            all_personalities = os.listdir("LableniBotConfig/Personalities/" + f)
+            for per in all_personalities:
+                root_to_parameters = "LableniBotConfig/Personalities/" + f + "/" + per
+                with open(root_to_parameters, "r", encoding='utf-8') as read_file:
+                    personalities_dict = json.load(read_file)
+
+                per_space = per.split(".")[0].replace("_", " ")
+
+                self.names_personalities_dict[f_space][per_space] = personalities_dict["BOT_NAME"]
 
     def select_bot(self, bot_txt, bot_state):
         Label(self.master, text="You select " + bot_txt + " with state " + bot_state).pack()
@@ -25,43 +49,68 @@ class Interface(Frame):
         file_menu = Menu(my_menu)
         my_menu.add_cascade(label="Select a Bot", menu=file_menu)
 
+        chatbot_label = "Female Bot 1"
+        name_happy = self.names_personalities_dict[chatbot_label]["Happy State"]
+        name_sad = self.names_personalities_dict[chatbot_label]["Sad State"]
+        name_relax = self.names_personalities_dict[chatbot_label]["Relax State"]
+        name_angry = self.names_personalities_dict[chatbot_label]["Angry State"]
+
         menu_female_1 = Menu(my_menu)
-        menu_female_1.add_command(label="Happy State", command=lambda: self.select_bot("Female Bot 1", "Happy State"))
+        menu_female_1.add_command(label="Happy State (" + name_happy + ")",
+                                  command=lambda: self.select_bot(chatbot_label, "Happy State"))
         menu_female_1.add_separator()
-        menu_female_1.add_command(label="Sad State", command=lambda: self.select_bot("Female Bot 1", "Sad State"))
+        menu_female_1.add_command(label="Sad State (" + name_sad + ")",
+                                  command=lambda: self.select_bot(chatbot_label, "Sad State"))
         menu_female_1.add_separator()
-        menu_female_1.add_command(label="Relax State", command=lambda: self.select_bot("Female Bot 1", "Relax State"))
+        menu_female_1.add_command(label="Relax State (" + name_relax + ")",
+                                  command=lambda: self.select_bot(chatbot_label, "Relax State"))
         menu_female_1.add_separator()
-        menu_female_1.add_command(label="Angry State", command=lambda: self.select_bot("Female Bot 1", "Angry State"))
+        menu_female_1.add_command(label="Angry State (" + name_angry + ")",
+                                  command=lambda: self.select_bot(chatbot_label, "Angry State"))
         file_menu.add_cascade(label="Female Bot 1", menu=menu_female_1)
 
         file_menu.add_separator()
 
+        chatbot_label = "Male Bot 1"
+        name_happy = self.names_personalities_dict[chatbot_label]["Happy State"]
+        name_sad = self.names_personalities_dict[chatbot_label]["Sad State"]
+        name_relax = self.names_personalities_dict[chatbot_label]["Relax State"]
+        name_angry = self.names_personalities_dict[chatbot_label]["Angry State"]
+
         menu_male_1 = Menu(my_menu)
-        menu_male_1.add_command(label="Happy State", command=lambda: self.select_bot("Male Bot 1", "Happy State"))
+        menu_male_1.add_command(label="Happy State (" + name_happy + ")",
+                                command=lambda: self.select_bot(chatbot_label, "Happy State"))
         menu_male_1.add_separator()
-        menu_male_1.add_command(label="Sad State", command=lambda: self.select_bot("Male Bot 1", "Sad State"))
+        menu_male_1.add_command(label="Sad State (" + name_sad + ")",
+                                command=lambda: self.select_bot(chatbot_label, "Sad State"))
         menu_male_1.add_separator()
-        menu_male_1.add_command(label="Relax State", command=lambda: self.select_bot("Male Bot 1", "Relax State"))
+        menu_male_1.add_command(label="Relax State (" + name_relax + ")",
+                                command=lambda: self.select_bot(chatbot_label, "Relax State"))
         menu_male_1.add_separator()
-        menu_male_1.add_command(label="Angry State", command=lambda: self.select_bot("Male Bot 1", "Angry State"))
+        menu_male_1.add_command(label="Angry State (" + name_angry + ")",
+                                command=lambda: self.select_bot(chatbot_label, "Angry State"))
         file_menu.add_cascade(label="Male Bot 1", menu=menu_male_1)
 
         file_menu.add_separator()
 
+        chatbot_label = "Female Bot 2"
+        name_happy = self.names_personalities_dict[chatbot_label]["Happy State"]
+        name_sad = self.names_personalities_dict[chatbot_label]["Sad State"]
+        name_relax = self.names_personalities_dict[chatbot_label]["Relax State"]
+        name_angry = self.names_personalities_dict[chatbot_label]["Angry State"]
+
         menu_female_2 = Menu(my_menu)
-        menu_female_2.add_command(label="Happy State",
-                                  command=lambda: self.select_bot("Female Bot 2", "Happy State"))
+        menu_female_2.add_command(label="Happy State (" + name_happy + ")",
+                                  command=lambda: self.select_bot(chatbot_label, "Happy State"))
         menu_female_2.add_separator()
-        menu_female_2.add_command(label="Sad State",
-                                  command=lambda: self.select_bot("Female Bot 2", "Sad State"))
+        menu_female_2.add_command(label="Sad State (" + name_happy + ")",
+                                  command=lambda: self.select_bot(chatbot_label, "Sad State"))
         menu_female_2.add_separator()
-        female_relax = "Relax State (Name)"
-        menu_female_2.add_command(label=female_relax,
-                                  command=lambda: self.select_bot("Female Bot 2", "Relax State"))
+        menu_female_2.add_command(label="Happy State (" + name_happy + ")",
+                                  command=lambda: self.select_bot(chatbot_label, "Relax State"))
         menu_female_2.add_separator()
-        menu_female_2.add_command(label="Angry State",
-                                  command=lambda: self.select_bot("Female Bot 2", "Angry State"))
+        menu_female_2.add_command(label="Happy State (" + name_happy + ")",
+                                  command=lambda: self.select_bot(chatbot_label, "Angry State"))
         file_menu.add_cascade(label="Female Bot 2", menu=menu_female_2)
 
         file_menu.add_separator()
@@ -112,12 +161,13 @@ class Interface(Frame):
             self.change_avatar_name = True
         self.master.destroy()
 
-# root = Tk()
-# root.title("LabLeni BOT")
-# root.geometry("400x400")
 
-# app = Interface(master=root)
+root = Tk()
+root.title("LabLeni BOT")
+root.geometry("400x400")
 
-# app.mainloop()
+app = Interface(master=root)
 
-# print(app.bot_config)
+app.mainloop()
+
+print(app.bot_config)
