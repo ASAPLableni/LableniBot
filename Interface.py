@@ -162,12 +162,12 @@ class Interface(Frame):
         self.master.destroy()
 
 
-root = Tk()
-root.title("LabLeni BOT")
-root.geometry("400x400")
+# root = Tk()
+# root.title("LabLeni BOT")
+# root.geometry("400x400")
 
-app = Interface(master=root)
+# app = Interface(master=root)
 
-app.mainloop()
+# app.mainloop()
 
-print(app.bot_config)
+# print(app.bot_config)

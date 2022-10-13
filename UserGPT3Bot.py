@@ -6,6 +6,7 @@ import pyaudio
 import os
 import json
 import pickle
+from threading import Thread
 # import sys
 # import random
 # import pyttsx3
@@ -78,7 +79,6 @@ CONTEXT_MESSAGE = personalities_dict["CONTEXT_MESSAGE"]
 INITIAL_MESSAGE = personalities_dict["INITIAL_MESSAGE"]
 
 if app.change_avatar_name:
-
     CONTEXT_MESSAGE = CONTEXT_MESSAGE.replace(BOT_NAME, app.avatar_name)
     INITIAL_MESSAGE = INITIAL_MESSAGE.replace(BOT_NAME, app.avatar_name)
 
@@ -100,6 +100,8 @@ BOT_MODEL = parameters_dict["BOT_MODEL"]
 BOT_TEMPERATURE = parameters_dict["BOT_TEMPERATURE"]
 BOT_FREQUENCY_PENALTY = parameters_dict["BOT_FREQUENCY_PENALTY"]
 BOT_PRESENCE_PENALTY = parameters_dict["BOT_PRESENCE_PENALTY"]
+
+ACTIVATE_MAX_TIME_TH = parameters_dict["ACTIVATE_MAX_TIME_TH"]
 
 NATIVE_LANGUAGE = parameters_dict["NATIVE_LANGUAGE"]
 
@@ -195,21 +197,36 @@ WAVE_OUTPUT_FILENAME = SUB_PATH_TO_DATA + "/Audios/Subject_" + subject_id
 os.mkdir(SUB_PATH_TO_DATA + "/BotAudios")
 WAVE_OUTPUT_FILENAME_BOT = SUB_PATH_TO_DATA + "/BotAudios/BotSubject_" + subject_id
 
-with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'rb') as f:
-    guide_of_times = pickle.load(f)
+if os.path.exists("Conversations/" + subject_id + '/GuideOfTimes.pkl'):
+    with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'rb') as f:
+        guide_of_times = pickle.load(f)
 
-guide_of_times.update({
-    CONFIG_NAME: {
-        "InitRealTimeStr": init_str_time,
-        "InitUnixTime": unix_time,
+    guide_of_times.update({
+        CONFIG_NAME: {
+            "InitRealTimeStr": init_str_time,
+            "InitUnixTime": unix_time,
+        }
+    })
+else:
+    guide_of_times = {
+        CONFIG_NAME: {
+            "InitRealTimeStr": init_str_time,
+            "InitUnixTime": unix_time,
+        }
     }
-})
 
 with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'wb') as handle:
     pickle.dump(guide_of_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-subprocess.call("python clock_track.py", shell=True)
+# ### Call the time ###
+# subprocess.call("python clock_track.py")
+
+def init_clock():
+    os.system("python clock_track.py")
+
+
+Thread(target=init_clock).start()
 
 # ################################
 # ### DEFINE THE CLASS CHATBOT ###
@@ -226,7 +243,8 @@ my_chatbot = LableniBot(
 
 bot_result_list = []
 spanish_text = " "
-repeat_message_label = False
+repeat_message_label, good_bye_message = False, False
+t0_init_pipeline = time.time()
 try:
     while True:
 
@@ -235,8 +253,13 @@ try:
         # #############################
 
         t_str_loop_start, t_unix_loop_start = ute.get_current_time()
-
-        if spanish_text is not None and not repeat_message_label:
+        if time.time() - t0_init_pipeline > 2 * 60 and ACTIVATE_MAX_TIME_TH:
+            t_i_openai = ute.get_current_time(only_unix=True)
+            bot_answer = "Bueno, me tengo que ir. Ha sido un placer conocerte y hablar contigo. " \
+                         "Hablamos en otro momento. Hasta luego."
+            good_bye_message = True
+            t_f_openai = ute.get_current_time(only_unix=True)
+        elif spanish_text is not None and not repeat_message_label:
             if my_chatbot.counter_conv_id > 0:
 
                 t_i_openai = ute.get_current_time(only_unix=True)
@@ -513,6 +536,9 @@ try:
         # This counter identifies the iteration of the conversation. If Bot and Human have talked,
         # another iteration starts.
         my_chatbot.counter_conv_id += 1
+
+        if good_bye_message:
+            break
 
 except KeyboardInterrupt:
     pass
