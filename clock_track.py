@@ -4,19 +4,24 @@ from tkinter.ttk import *
 
 # importing strftime function to
 # retrieve system's time
-from time import strftime
+import datetime
+import time
+
+T0_GLOBAL = time.time()
 
 # creating tkinter window
 root = Tk()
 root.title('Clock')
+root.geometry("200x100")
 
 
 # This function is used to
 # display time on the label
-def time():
-    string = strftime('%H:%M:%S %p')
+def show_time():
+    sec_diff = time.time() - T0_GLOBAL
+    string = str(datetime.timedelta(seconds=sec_diff)).split(".")[0]
     lbl.config(text=string)
-    lbl.after(1000, time)
+    lbl.after(1000, show_time)
 
 
 # Styling the label widget so that clock
@@ -28,6 +33,6 @@ lbl = Label(root, font=('calibri', 40, 'bold'),
 # Placing clock at the centre
 # of the tkinter window
 lbl.pack(anchor='center')
-time()
+show_time()
 
 mainloop()

@@ -208,6 +208,9 @@ guide_of_times.update({
 with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'wb') as handle:
     pickle.dump(guide_of_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+
+subprocess.call("python clock_track.py", shell=True)
+
 # ################################
 # ### DEFINE THE CLASS CHATBOT ###
 ##################################
