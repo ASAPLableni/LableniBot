@@ -161,7 +161,6 @@ class Interface(Frame):
             self.change_avatar_name = True
         self.master.destroy()
 
-
 # root = Tk()
 # root.title("LabLeni BOT")
 # root.geometry("400x400")

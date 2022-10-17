@@ -1,20 +1,43 @@
 import pandas as pd
 import utils as ute
+import re
+import json
 
 
 class LableniBot:
 
-    def __init__(self, subject_id, mode_chat, config_name, global_message, aws_prosody, path_to_save):
+    def __init__(self,
+                 subject_id, bot_name, bot_start_sequence, mode_chat, global_message,
+                 path_to_bot_param, path_to_bot_personality, path_to_save):
         self.subject_id = subject_id
+        self.bot_name = bot_name
+        self.bot_start_sequence = bot_start_sequence
         self.mode_chat = mode_chat
-        self.config_name = config_name
         self.global_message = global_message
         self.path_to_save = path_to_save
 
+        # Parameters from BOT personality JSON.
+        with open(path_to_bot_personality, "r", encoding='utf-8') as read_file:
+            personalities_dict = json.load(read_file)
+
+        self.aws_prosody = personalities_dict["AWS_PROSODY"]
+        self.config_name = personalities_dict["CONFIG_NAME"]
+
+        # Parameters from BOT parameters JSON.
+        with open(path_to_bot_param, "r", encoding='utf-8') as read_file:
+            parameters_dict = json.load(read_file)
+
+        self.max_num_sentences = parameters_dict["MAX_NUM_SENTENCES"]
+        self.native_language = parameters_dict["NATIVE_LANGUAGE"]
+
+        # Initializations.
         self.sentence_to_repeat = "Puedes repetir, por favor? No te he entendido bien"
+        self.sentence_to_finish = "Bueno, me tengo que ir. Ha sido un placer conocerte y hablar contigo. " \
+                                  "Hablamos en otro momento. Hasta luego."
         self.chat_conversation = []
         self.counter_conv_id = 0
-        self.aws_prosody = aws_prosody
+
+        del personalities_dict, parameters_dict
 
     def append_data(self,
                     t_str_loop_start, t_unix_loop_start,
@@ -24,12 +47,12 @@ class LableniBot:
                     s2t_start_unix, s2t_end_unix,
                     bot_talk_start_unix, bot_talk_end_unix,
                     person_talk_start_unix, person_talk_end_unix):
-
         t_str_loop_save, t_unix_loop_save = ute.get_current_time()
-        
+
         self.chat_conversation.append({
             "ConversationSentenceId": self.counter_conv_id,
             "SubjectId": self.subject_id,
+            "ChatbotName": self.bot_name,
             "TimeLoopInitStr": t_str_loop_start,
             "UnixTimestampLoopInit": t_unix_loop_start,
             "TimeSaveStr": t_str_loop_save,
@@ -63,3 +86,32 @@ class LableniBot:
         input_str_aws = "<speak>" + input_str_aws + "</speak>"
 
         return input_str_aws
+
+    def clean_bot_message(self, bot_answer):
+        bot_message = bot_answer.replace(self.bot_name + ":", "") if self.bot_name + ":" in bot_answer else bot_answer
+        bot_message = bot_message.replace("\n", "") if "\n" in bot_message else bot_message
+
+        # Remove certain expressions as "JaJa".
+        bad_expressions = [
+            "JaJa ", "jaja ", "xd ", "XD ", "Xd ", "Ah ", "ah "
+        ]
+        for bad_expr in bad_expressions:
+            bot_message = bot_message.replace(bad_expr, " ")
+
+        # Find and remove words inside parenthesis as "(Risas)", etc.
+        to_find_in_parenthesis = r'\((.*?)\)'
+        regex_parenthesis = re.findall(to_find_in_parenthesis, bot_message)
+        if len(regex_parenthesis) > 0:
+            for regex_par in regex_parenthesis:
+                bot_message = bot_message.replace("(" + regex_par + ")", "")
+
+        # Keep only the first X sentences before a dot, to avoid very long message.
+        message_split = bot_message.split(".")
+        bot_message = ".".join(message_split) if len(message_split) > self.max_num_sentences else bot_message
+
+        if len(bot_message) <= 2 or bot_message == "?" or bot_message == "!":
+            bot_message = self.bot_start_sequence + " " + self.sentence_to_repeat
+
+        bot_message = bot_message if bot_message[-1] in [".", "?", "!"] else bot_message + "."
+
+        return bot_message

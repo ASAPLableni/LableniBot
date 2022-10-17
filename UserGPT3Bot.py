@@ -7,9 +7,6 @@ import os
 import json
 import pickle
 from threading import Thread
-# import sys
-# import random
-# import pyttsx3
 
 # import speech_recognition as sr
 import openai
@@ -20,8 +17,6 @@ from google.cloud import speech
 from googletrans import Translator
 
 from boto3 import Session
-# from botocore.exceptions import BotoCoreError, ClientError
-# from tempfile import gettempdir
 
 from pyannote.audio.pipelines import VoiceActivityDetection
 
@@ -30,10 +25,6 @@ from tkinter import *
 from Interface import Interface
 import utils as ute
 from ChatbotGlobals import LableniBot
-
-# ######################################
-# ### Opening PARAMETERS CONFIG file ###
-# ######################################
 
 # ### Interface ###
 
@@ -58,6 +49,10 @@ print("Subject Name", subject_name)
 bot_txt, bot_state = app.bot_config.split(" ; ")
 bot_txt_to_root, bot_state_to_root = bot_txt.replace(" ", "_"), bot_state.replace(" ", "_")
 
+# ######################################
+# ### Opening PARAMETERS CONFIG file ###
+# ######################################
+
 root_to_parameters = "LableniBotConfig/Personalities/" + bot_txt_to_root + "/" + bot_state_to_root + ".json"
 
 with open(root_to_parameters, "r", encoding='utf-8') as read_file:
@@ -66,7 +61,6 @@ with open(root_to_parameters, "r", encoding='utf-8') as read_file:
 CONFIG_NAME = personalities_dict["CONFIG_NAME"]
 BOT_VOICE_ID = personalities_dict["BOT_VOICE_ID"]
 ENGINE_TYPE = personalities_dict["ENGINE_TYPE"]
-AWS_PROSODY = personalities_dict["AWS_PROSODY"]
 
 # ### Initial message to de chatbot
 
@@ -102,8 +96,7 @@ BOT_FREQUENCY_PENALTY = parameters_dict["BOT_FREQUENCY_PENALTY"]
 BOT_PRESENCE_PENALTY = parameters_dict["BOT_PRESENCE_PENALTY"]
 
 ACTIVATE_MAX_TIME_TH = parameters_dict["ACTIVATE_MAX_TIME_TH"]
-
-NATIVE_LANGUAGE = parameters_dict["NATIVE_LANGUAGE"]
+MAX_TIME_TH_s = parameters_dict["MAX_TIME_TH_s"]
 
 # Time to wait until ask the user to repeat.
 waitTime = 15
@@ -234,10 +227,12 @@ Thread(target=init_clock).start()
 
 my_chatbot = LableniBot(
     subject_id=subject_id,
+    bot_name=BOT_NAME,
+    bot_start_sequence=BOT_START_SEQUENCE,
     mode_chat=CHAT_MODE,
-    config_name=CONFIG_NAME,
     global_message=CONTEXT_MESSAGE + "\n",
-    aws_prosody=AWS_PROSODY,
+    path_to_bot_param="LableniBotConfig/bot_parameters.json",
+    path_to_bot_personality="LableniBotConfig/Personalities/" + bot_txt_to_root + "/" + bot_state_to_root + ".json",
     path_to_save=SUB_PATH_TO_DATA + "/Conv_" + str(init_time),
 )
 
@@ -253,12 +248,12 @@ try:
         # #############################
 
         t_str_loop_start, t_unix_loop_start = ute.get_current_time()
-        if time.time() - t0_init_pipeline > 2 * 60 and ACTIVATE_MAX_TIME_TH:
+        if time.time() - t0_init_pipeline > MAX_TIME_TH_s and ACTIVATE_MAX_TIME_TH:
             t_i_openai = ute.get_current_time(only_unix=True)
-            bot_answer = "Bueno, me tengo que ir. Ha sido un placer conocerte y hablar contigo. " \
-                         "Hablamos en otro momento. Hasta luego."
+            bot_answer = my_chatbot.sentence_to_finish
             good_bye_message = True
             t_f_openai = ute.get_current_time(only_unix=True)
+
         elif spanish_text is not None and not repeat_message_label:
             if my_chatbot.counter_conv_id > 0:
 
@@ -290,19 +285,13 @@ try:
             t_f_openai = ute.get_current_time(only_unix=True)
             repeat_message_label = False
 
-        bot_message = bot_answer.replace(BOT_NAME + ":", "") if BOT_NAME + ":" in bot_answer else bot_answer
-        bot_message = bot_message.replace("\n", "") if "\n" in bot_message else bot_message
-        # bot_message = bot_message[1:] if bot_message[0] == " " else bot_message
-
-        if len(bot_message) <= 2 or bot_message == "?" or bot_message == "!":
-            bot_message = BOT_START_SEQUENCE + " " + my_chatbot.sentence_to_repeat
-
-        bot_message = bot_message if bot_message[-1] in [".", "?", "!"] else bot_message + "."
+        # Clean chatbot message
+        bot_message = my_chatbot.clean_bot_message(bot_answer)
 
         try:
             detect_language = google_translator.detect(bot_message)
             if detect_language.lang != "es":
-                x = google_translator.translate(bot_message, dest=NATIVE_LANGUAGE)
+                x = google_translator.translate(bot_message, dest=my_chatbot.native_language)
                 bot_message_filtered = x.text
             else:
                 bot_message_filtered = bot_message
@@ -312,9 +301,9 @@ try:
         my_chatbot.global_message += bot_message_filtered
         print("*** Global message *** \n", my_chatbot.global_message)
 
-        # ###########################
-        # ### AWS. TEXT TO SPEECH ###
-        # ###########################
+        # ##########################
+        # ### AWS TEXT TO SPEECH ###
+        # ##########################
 
         t_i_aws = ute.get_current_time(only_unix=True)
 
@@ -480,7 +469,7 @@ try:
             google_config = speech.RecognitionConfig(
                 encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
                 # sample_rate_hertz=44100,
-                language_code=NATIVE_LANGUAGE + "-EU",
+                language_code=my_chatbot.native_language + "-EU",
                 audio_channel_count=1,
                 enable_separate_recognition_per_channel=True,
                 enable_automatic_punctuation=True
@@ -515,7 +504,7 @@ try:
         person_message = person_message if person_message[-1] in [".", "?", "!"] else person_message + "."
         my_chatbot.global_message += "\n" + HUMAN_START_SEQUENCE + " " + person_message
 
-        my_chatbot.global_message += "\n" + BOT_START_SEQUENCE + " "
+        my_chatbot.global_message += "\n" + my_chatbot.bot_start_sequence + " "
 
         my_chatbot.append_data(
             t_str_loop_start=np.nan, t_unix_loop_start=np.nan,

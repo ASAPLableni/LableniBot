@@ -27,9 +27,9 @@ def get_current_time(only_unix=False, get_time_str=False):
     sec = str(t.second)
     sec = "0" + sec if len(sec) == 1 else sec
 
-    mili_sec = str(t.microsecond)
+    mil_sec = str(t.microsecond)
 
-    date_str = year + "-" + month + "-" + day + " " + hour + ":" + mint + ":" + sec + "." + mili_sec
+    date_str = year + "-" + month + "-" + day + " " + hour + ":" + mint + ":" + sec + "." + mil_sec
 
     if get_time_str:
         return year + month + day + "_" + hour + mint + sec
@@ -93,7 +93,7 @@ def process_googles2t_answer(resp_res):
     return spanish_text, repeat_message_label
 
 
-def reproduce_audio(root_bot_audio, CHUNK):
+def reproduce_audio(root_bot_audio, chunk):
     # ###############
     # ### PYAUDIO ###
     # ###############
@@ -108,12 +108,12 @@ def reproduce_audio(root_bot_audio, CHUNK):
                     rate=f.getframerate(),
                     output=True)
     # read data
-    data = f.readframes(CHUNK)
+    data = f.readframes(chunk)
 
     # play stream
     while data:
         stream.write(data)
-        data = f.readframes(CHUNK)
+        data = f.readframes(chunk)
         # stop stream
     stream.stop_stream()
     stream.close()
