@@ -32,7 +32,7 @@ class LableniBot:
 
         # Initializations.
         self.sentence_to_repeat = "Puedes repetir, por favor? No te he entendido bien"
-        self.sentence_to_finish = "Bueno, me tengo que ir. Ha sido un placer conocerte y hablar contigo. " \
+        self.sentence_to_finish = "Bueno, lo siento, me tengo que ir. Ha sido un placer conocerte y hablar contigo. " \
                                   "Hablamos en otro momento. Hasta luego."
         self.chat_conversation = []
         self.counter_conv_id = 0
