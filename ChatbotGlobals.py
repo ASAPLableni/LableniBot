@@ -36,6 +36,7 @@ class LableniBot:
                                   "Hablamos en otro momento. Hasta luego."
         self.chat_conversation = []
         self.counter_conv_id = 0
+        self.good_bye_message = False
 
         del personalities_dict, parameters_dict
 

@@ -238,7 +238,7 @@ my_chatbot = LableniBot(
 
 bot_result_list = []
 spanish_text = " "
-repeat_message_label, good_bye_message = False, False
+repeat_message_label = False
 t0_init_pipeline = time.time()
 try:
     while True:
@@ -251,7 +251,7 @@ try:
         if time.time() - t0_init_pipeline > MAX_TIME_TH_s and ACTIVATE_MAX_TIME_TH:
             t_i_openai = ute.get_current_time(only_unix=True)
             bot_answer = my_chatbot.sentence_to_finish
-            good_bye_message = True
+            my_chatbot.good_bye_message = True
             t_f_openai = ute.get_current_time(only_unix=True)
 
         elif spanish_text is not None and not repeat_message_label:
@@ -295,7 +295,7 @@ try:
                 bot_message_filtered = x.text
             else:
                 bot_message_filtered = bot_message
-        except:
+        except Exception as ex:
             bot_message_filtered = bot_message
 
         my_chatbot.global_message += bot_message_filtered
