@@ -67,7 +67,7 @@ class Interface(Frame):
         menu_female_1.add_separator()
         menu_female_1.add_command(label="Angry State (" + name_angry + ")",
                                   command=lambda: self.select_bot(chatbot_label, "Angry State"))
-        file_menu.add_cascade(label="Female Bot 1", menu=menu_female_1)
+        file_menu.add_cascade(label=chatbot_label, menu=menu_female_1)
 
         file_menu.add_separator()
 
@@ -89,7 +89,7 @@ class Interface(Frame):
         menu_male_1.add_separator()
         menu_male_1.add_command(label="Angry State (" + name_angry + ")",
                                 command=lambda: self.select_bot(chatbot_label, "Angry State"))
-        file_menu.add_cascade(label="Male Bot 1", menu=menu_male_1)
+        file_menu.add_cascade(label=chatbot_label, menu=menu_male_1)
 
         file_menu.add_separator()
 
@@ -103,36 +103,49 @@ class Interface(Frame):
         menu_female_2.add_command(label="Happy State (" + name_happy + ")",
                                   command=lambda: self.select_bot(chatbot_label, "Happy State"))
         menu_female_2.add_separator()
-        menu_female_2.add_command(label="Sad State (" + name_happy + ")",
+        menu_female_2.add_command(label="Sad State (" + name_sad + ")",
                                   command=lambda: self.select_bot(chatbot_label, "Sad State"))
         menu_female_2.add_separator()
-        menu_female_2.add_command(label="Happy State (" + name_happy + ")",
+        menu_female_2.add_command(label="Relax State (" + name_relax + ")",
                                   command=lambda: self.select_bot(chatbot_label, "Relax State"))
         menu_female_2.add_separator()
-        menu_female_2.add_command(label="Happy State (" + name_happy + ")",
+        menu_female_2.add_command(label="Angry State (" + name_angry + ")",
                                   command=lambda: self.select_bot(chatbot_label, "Angry State"))
-        file_menu.add_cascade(label="Female Bot 2", menu=menu_female_2)
+        file_menu.add_cascade(label=chatbot_label, menu=menu_female_2)
+
+        file_menu.add_separator()
+
+        chatbot_label = "Male Bot 2"
+        name_happy = self.names_personalities_dict[chatbot_label]["Happy State"]
+        name_sad = self.names_personalities_dict[chatbot_label]["Sad State"]
+        name_relax = self.names_personalities_dict[chatbot_label]["Relax State"]
+        name_angry = self.names_personalities_dict[chatbot_label]["Angry State"]
+
+        menu_male_2 = Menu(my_menu)
+        menu_male_2.add_command(label="Happy State (" + name_happy + ")",
+                                command=lambda: self.select_bot(chatbot_label, "Happy State"))
+        menu_male_2.add_separator()
+        menu_male_2.add_command(label="Sad State (" + name_sad + ")",
+                                command=lambda: self.select_bot(chatbot_label, "Sad State"))
+        menu_male_2.add_separator()
+        menu_male_2.add_command(label="Relax State (" + name_relax + ")",
+                                command=lambda: self.select_bot(chatbot_label, "Relax State"))
+        menu_male_2.add_separator()
+        menu_male_2.add_command(label="Angry State (" + name_angry + ")",
+                                command=lambda: self.select_bot(chatbot_label, "Angry State"))
+        file_menu.add_cascade(label=chatbot_label, menu=menu_male_2)
 
         file_menu.add_separator()
 
         menu_male_2 = Menu(my_menu)
-        menu_male_2.add_command(label="Happy State", command=lambda: self.select_bot("Male Bot 2", "Happy State"))
+        menu_male_2.add_command(label="Neutral 1 (Female)",
+                                command=lambda: self.select_bot("Neutral", "Neutral 1"))
         menu_male_2.add_separator()
-        menu_male_2.add_command(label="Sad State", command=lambda: self.select_bot("Male Bot 2", "Sad State"))
+        menu_male_2.add_command(label="Neutral 2 (Male)",
+                                command=lambda: self.select_bot("Neutral", "Neutral 2"))
         menu_male_2.add_separator()
-        menu_male_2.add_command(label="Relax State", command=lambda: self.select_bot("Male Bot 2", "Relax State"))
-        menu_male_2.add_separator()
-        menu_male_2.add_command(label="Angry State", command=lambda: self.select_bot("Male Bot 2", "Angry State"))
-        file_menu.add_cascade(label="Male Bot 2", menu=menu_male_2)
-
-        file_menu.add_separator()
-
-        menu_male_2 = Menu(my_menu)
-        menu_male_2.add_command(label="Neutral 1", command=lambda: self.select_bot("Neutral", "Neutral 1"))
-        menu_male_2.add_separator()
-        menu_male_2.add_command(label="Neutral 2", command=lambda: self.select_bot("Neutral", "Neutral 2"))
-        menu_male_2.add_separator()
-        menu_male_2.add_command(label="Neutral 3", command=lambda: self.select_bot("Neutral", "Neutral 3"))
+        menu_male_2.add_command(label="Neutral 3 (Female)",
+                                command=lambda: self.select_bot("Neutral", "Neutral 3"))
         file_menu.add_cascade(label="Neutral", menu=menu_male_2)
 
         Label(self.master, text="Please enter subject's name").pack()
