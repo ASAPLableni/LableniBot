@@ -526,7 +526,7 @@ try:
         # another iteration starts.
         my_chatbot.counter_conv_id += 1
 
-        if good_bye_message:
+        if my_chatbot.good_bye_message:
             break
 
 except KeyboardInterrupt:
