@@ -94,7 +94,7 @@ class LableniBot:
 
         # Remove certain expressions as "JaJa".
         bad_expressions = [
-            "JaJa ", "jaja ", "xd ", "XD ", "Xd ", "Ah ", "ah "
+            "JaJa ", "JaJa,", "jaja ", "xd ", "XD ", "Xd ", "Xd,", "Ah ", "ah ", "Ah,"
         ]
         for bad_expr in bad_expressions:
             bot_message = bot_message.replace(bad_expr, " ")
@@ -108,7 +108,8 @@ class LableniBot:
 
         # Keep only the first X sentences before a dot, to avoid very long message.
         message_split = bot_message.split(".")
-        bot_message = ".".join(message_split) if len(message_split) > self.max_num_sentences else bot_message
+        if len(message_split) > self.max_num_sentences:
+            bot_message = ".".join(message_split[:self.max_num_sentences])
 
         if len(bot_message) <= 2 or bot_message == "?" or bot_message == "!":
             bot_message = self.bot_start_sequence + " " + self.sentence_to_repeat

@@ -219,7 +219,7 @@ def init_clock():
     os.system("python clock_track.py")
 
 
-Thread(target=init_clock).start()
+# Thread(target=init_clock).start()
 
 # ################################
 # ### DEFINE THE CLASS CHATBOT ###
@@ -310,7 +310,7 @@ try:
         # Message string transform to AWS Polly PCM format.
         bot_message_spanish_aws = my_chatbot.from_str_to_aws_polly_pcm(bot_message_filtered)
 
-        RATE = 16000  # Polly supports 16000Hz and 8000Hz output for PCM format
+        RATE_AWS = 16000  # Polly supports 16000Hz and 8000Hz output for PCM format
         response = polly.synthesize_speech(
             Text=bot_message_spanish_aws,
             OutputFormat="pcm",
@@ -342,7 +342,7 @@ try:
         WAVE_FORMAT = wave.open(root_bot_audio, 'wb')
         WAVE_FORMAT.setnchannels(OMNI_CHANNELS)
         WAVE_FORMAT.setsampwidth(WAV_SAMPLE_WIDTH_BYTES)
-        WAVE_FORMAT.setframerate(RATE)
+        WAVE_FORMAT.setframerate(RATE_AWS)
         WAVE_FORMAT.writeframes(b''.join(FRAMES))
         WAVE_FORMAT.close()
 
