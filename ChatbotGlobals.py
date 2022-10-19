@@ -22,6 +22,7 @@ class LableniBot:
 
         self.aws_prosody = personalities_dict["AWS_PROSODY"]
         self.config_name = personalities_dict["CONFIG_NAME"]
+        self.farewell_message = personalities_dict["FAREWELL_MESSAGE"]
 
         # Parameters from BOT parameters JSON.
         with open(path_to_bot_param, "r", encoding='utf-8') as read_file:
@@ -32,10 +33,10 @@ class LableniBot:
 
         # Initializations.
         self.sentence_to_repeat = "Puedes repetir, por favor? No te he entendido bien"
-        self.sentence_to_finish = "Bueno, me tengo que ir. Ha sido un placer conocerte y hablar contigo. " \
-                                  "Hablamos en otro momento. Hasta luego."
+
         self.chat_conversation = []
         self.counter_conv_id = 0
+        self.good_bye_message = False
 
         del personalities_dict, parameters_dict
 
@@ -76,6 +77,10 @@ class LableniBot:
 
     def save_data(self):
         pd.DataFrame(self.chat_conversation).to_pickle(self.path_to_save + ".pkl")
+
+    def from_pkl_to_csv(self):
+        df_pkl = pd.read_pickle(self.path_to_save + ".pkl")
+        df_pkl.to_csv(self.path_to_save + ".csv", index=False, sep=";")
 
     def from_str_to_aws_polly_pcm(self, input_str):
         input_str_aws = input_str

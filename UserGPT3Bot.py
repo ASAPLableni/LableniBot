@@ -2,6 +2,8 @@ import numpy as np
 import subprocess
 import wave
 import time
+
+import pandas as pd
 import pyaudio
 import os
 import json
@@ -195,14 +197,14 @@ if os.path.exists("Conversations/" + subject_id + '/GuideOfTimes.pkl'):
         guide_of_times = pickle.load(f)
 
     guide_of_times.update({
-        CONFIG_NAME: {
+        CONFIG_NAME + "_start": {
             "InitRealTimeStr": init_str_time,
             "InitUnixTime": unix_time,
         }
     })
 else:
     guide_of_times = {
-        CONFIG_NAME: {
+        CONFIG_NAME + "_start": {
             "InitRealTimeStr": init_str_time,
             "InitUnixTime": unix_time,
         }
@@ -238,7 +240,7 @@ my_chatbot = LableniBot(
 
 bot_result_list = []
 spanish_text = " "
-repeat_message_label, good_bye_message = False, False
+repeat_message_label = False
 t0_init_pipeline = time.time()
 try:
     while True:
@@ -250,8 +252,8 @@ try:
         t_str_loop_start, t_unix_loop_start = ute.get_current_time()
         if time.time() - t0_init_pipeline > MAX_TIME_TH_s and ACTIVATE_MAX_TIME_TH:
             t_i_openai = ute.get_current_time(only_unix=True)
-            bot_answer = my_chatbot.sentence_to_finish
-            good_bye_message = True
+            bot_answer = my_chatbot.farewell_message
+            my_chatbot.good_bye_message = True
             t_f_openai = ute.get_current_time(only_unix=True)
 
         elif spanish_text is not None and not repeat_message_label:
@@ -526,8 +528,47 @@ try:
         # another iteration starts.
         my_chatbot.counter_conv_id += 1
 
-        if good_bye_message:
+        if my_chatbot.good_bye_message:
+            end_str_time, unix_time = ute.get_current_time()
+
+            with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'rb') as f:
+                guide_of_times = pickle.load(f)
+
+            guide_of_times.update({
+                my_chatbot.config_name + "_end": {
+                    "EndRealTimeStr": end_str_time,
+                    "EndUnixTime": unix_time,
+                }
+            })
+
+            with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'wb') as handle:
+                pickle.dump(guide_of_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+            pd.DataFrame(guide_of_times).to_csv(
+                "Conversations/" + subject_id + '/GuideOfTimes.csv', index=False, sep=";"
+            )
+
+            my_chatbot.from_pkl_to_csv()
+
             break
 
 except KeyboardInterrupt:
-    pass
+
+    with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'rb') as f:
+        guide_of_times = pickle.load(f)
+
+    guide_of_times.update({
+        my_chatbot.config_name + "_end": {
+            "EndRealTimeStr": end_str_time,
+            "EndUnixTime": unix_time,
+        }
+    })
+
+    with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'wb') as handle:
+        pickle.dump(guide_of_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    pd.DataFrame(guide_of_times).to_csv(
+        "Conversations/" + subject_id + '/GuideOfTimes.csv', index=False, sep=";"
+    )
+
+    my_chatbot.from_pkl_to_csv()

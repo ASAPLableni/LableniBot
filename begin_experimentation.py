@@ -31,11 +31,13 @@ time.sleep(TIME_RECORDING)  # Two minutes recording
 end_date_str, end_date_unix = ute.get_current_time()
 
 dict_help = {
-    "Open Eyes GSR": {
-        "InitRealTimeStr": init_date_str,
-        "InitUnixTime": init_date_unix,
-        "EndRealTimeStr": end_date_str,
-        "EndUnixTime": end_date_unix,
+    "Open Eyes GSR Begin": {
+        "RealTimeStr": init_date_str,
+        "UnixTime": init_date_unix,
+    },
+    "Open Eyes GSR End": {
+        "RealTimeStr": end_date_str,
+        "UnixTime": end_date_unix,
     }
 }
 
@@ -64,11 +66,13 @@ time.sleep(TIME_RECORDING)  # Two minutes recording
 end_date_str, end_date_unix = ute.get_current_time()
 
 dict_help.update({
-    "Closed Eyes GSR": {
-        "InitRealTimeStr": init_date_str,
-        "InitUnixTime": init_date_unix,
-        "EndRealTimeStr": end_date_str,
-        "EndUnixTime": end_date_unix,
+    "Closed Eyes GSR Begin": {
+        "RealTimeStr": init_date_str,
+        "UnixTime": init_date_unix,
+    },
+    "Closed Eyes GSR End": {
+        "RealTimeStr": end_date_str,
+        "UnixTime": end_date_unix,
     }
 })
 
