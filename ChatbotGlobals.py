@@ -7,22 +7,25 @@ import json
 class LableniBot:
 
     def __init__(self,
-                 subject_id, bot_name, bot_start_sequence, mode_chat, global_message,
+                 subject_id, mode_chat,
                  path_to_bot_param, path_to_bot_personality, path_to_save):
         self.subject_id = subject_id
-        self.bot_name = bot_name
-        self.bot_start_sequence = bot_start_sequence
         self.mode_chat = mode_chat
-        self.global_message = global_message
         self.path_to_save = path_to_save
 
         # Parameters from BOT personality JSON.
         with open(path_to_bot_personality, "r", encoding='utf-8') as read_file:
             personalities_dict = json.load(read_file)
 
+        self.bot_name = personalities_dict["BOT_NAME"]
+        self.bot_start_sequence = self.bot_name + ":"
+        self.global_message = personalities_dict["CONTEXT_MESSAGE"]
+        self.initial_message = personalities_dict["INITIAL_MESSAGE"]
         self.aws_prosody = personalities_dict["AWS_PROSODY"]
         self.config_name = personalities_dict["CONFIG_NAME"]
         self.farewell_message = personalities_dict["FAREWELL_MESSAGE"]
+        self.bot_voice_id = personalities_dict["BOT_VOICE_ID"]
+        self.engine_type = personalities_dict["ENGINE_TYPE"]
 
         # Parameters from BOT parameters JSON.
         with open(path_to_bot_param, "r", encoding='utf-8') as read_file:

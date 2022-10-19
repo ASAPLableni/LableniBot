@@ -55,31 +55,9 @@ bot_txt_to_root, bot_state_to_root = bot_txt.replace(" ", "_"), bot_state.replac
 # ### Opening PARAMETERS CONFIG file ###
 # ######################################
 
-root_to_parameters = "LableniBotConfig/Personalities/" + bot_txt_to_root + "/" + bot_state_to_root + ".json"
-
-with open(root_to_parameters, "r", encoding='utf-8') as read_file:
-    personalities_dict = json.load(read_file)
-
-CONFIG_NAME = personalities_dict["CONFIG_NAME"]
-BOT_VOICE_ID = personalities_dict["BOT_VOICE_ID"]
-ENGINE_TYPE = personalities_dict["ENGINE_TYPE"]
-
-# ### Initial message to de chatbot
-
-BOT_NAME = personalities_dict["BOT_NAME"]
-BOT_START_SEQUENCE = BOT_NAME + ":"
+# ### Initial message to de chatbot ###
 
 HUMAN_START_SEQUENCE = subject_name + ":"
-
-CONTEXT_MESSAGE = personalities_dict["CONTEXT_MESSAGE"]
-INITIAL_MESSAGE = personalities_dict["INITIAL_MESSAGE"]
-
-if app.change_avatar_name:
-    CONTEXT_MESSAGE = CONTEXT_MESSAGE.replace(BOT_NAME, app.avatar_name)
-    INITIAL_MESSAGE = INITIAL_MESSAGE.replace(BOT_NAME, app.avatar_name)
-
-    BOT_NAME = app.avatar_name
-    BOT_START_SEQUENCE = BOT_NAME + ":"
 
 # ############################
 # ### Open Parameters dict ###
@@ -192,27 +170,6 @@ WAVE_OUTPUT_FILENAME = SUB_PATH_TO_DATA + "/Audios/Subject_" + subject_id
 os.mkdir(SUB_PATH_TO_DATA + "/BotAudios")
 WAVE_OUTPUT_FILENAME_BOT = SUB_PATH_TO_DATA + "/BotAudios/BotSubject_" + subject_id
 
-if os.path.exists("Conversations/" + subject_id + '/GuideOfTimes.pkl'):
-    with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'rb') as f:
-        guide_of_times = pickle.load(f)
-
-    guide_of_times.update({
-        CONFIG_NAME + "_start": {
-            "InitRealTimeStr": init_str_time,
-            "InitUnixTime": unix_time,
-        }
-    })
-else:
-    guide_of_times = {
-        CONFIG_NAME + "_start": {
-            "InitRealTimeStr": init_str_time,
-            "InitUnixTime": unix_time,
-        }
-    }
-
-with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'wb') as handle:
-    pickle.dump(guide_of_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
 
 # ### Call the time ###
 # subprocess.call("python clock_track.py")
@@ -229,14 +186,41 @@ def init_clock():
 
 my_chatbot = LableniBot(
     subject_id=subject_id,
-    bot_name=BOT_NAME,
-    bot_start_sequence=BOT_START_SEQUENCE,
     mode_chat=CHAT_MODE,
-    global_message=CONTEXT_MESSAGE + "\n",
     path_to_bot_param="LableniBotConfig/bot_parameters.json",
     path_to_bot_personality="LableniBotConfig/Personalities/" + bot_txt_to_root + "/" + bot_state_to_root + ".json",
     path_to_save=SUB_PATH_TO_DATA + "/Conv_" + str(init_time),
 )
+
+# ### Change the name of the avatar if it is needed ###
+
+if app.change_avatar_name:
+    my_chatbot.global_message = my_chatbot.global_message.replace(my_chatbot.bot_name, app.avatar_name)
+    my_chatbot.initial_message = my_chatbot.initial_message.replace(my_chatbot.bot_name, app.avatar_name)
+
+    my_chatbot.bot_name = app.avatar_name
+    my_chatbot.bot_start_sequence = my_chatbot.bot_name + ":"
+
+if os.path.exists("Conversations/" + subject_id + '/GuideOfTimes.pkl'):
+    with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'rb') as f:
+        guide_of_times = pickle.load(f)
+
+    guide_of_times.update({
+        my_chatbot.config_name + "_start": {
+            "InitRealTimeStr": init_str_time,
+            "InitUnixTime": unix_time,
+        }
+    })
+else:
+    guide_of_times = {
+        my_chatbot.config_name + "_start": {
+            "InitRealTimeStr": init_str_time,
+            "InitUnixTime": unix_time,
+        }
+    }
+
+with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'wb') as handle:
+    pickle.dump(guide_of_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 bot_result_list = []
 spanish_text = " "
@@ -281,7 +265,7 @@ try:
 
             else:
                 t_i_openai = ute.get_current_time(only_unix=True)
-                bot_answer = INITIAL_MESSAGE
+                bot_answer = my_chatbot.initial_message
                 t_f_openai = ute.get_current_time(only_unix=True)
         else:
             t_i_openai = ute.get_current_time(only_unix=True)
@@ -318,9 +302,9 @@ try:
         response = polly.synthesize_speech(
             Text=bot_message_spanish_aws,
             OutputFormat="pcm",
-            VoiceId=BOT_VOICE_ID,
+            VoiceId=my_chatbot.bot_voice_id,
             # SampleRate=str(RATE),
-            Engine=ENGINE_TYPE,
+            Engine=my_chatbot.engine_type,
             TextType="ssml"
         )
 
