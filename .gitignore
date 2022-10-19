@@ -17,4 +17,5 @@ venv/
 *.pkl
 google_api.json
 *.idea/
+.idea/
 avoid_words.json
