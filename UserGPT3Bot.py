@@ -8,7 +8,7 @@ import pyaudio
 import os
 import json
 import pickle
-from threading import Thread
+# from threading import Thread
 
 # import speech_recognition as sr
 import openai
@@ -148,7 +148,6 @@ CHAT_MODE = "voice"  # TODO: Put the parameter in the interface.
 
 if OMNIVERSE_MODULE:
     ROOT_TO_OMNIVERSE = config_dict["ROOT_TO_OMNIVERSE"]
-    OMNIVERSE_AVATAR = personalities_dict["OMNIVERSE_AVATAR"]
 
 # ##############
 # ### INPUTS ###
@@ -344,7 +343,8 @@ try:
 
             # OMNIVERSE_AVATAR = "/Woman/audio_player_streaming"
             call_to_omniverse = " python " + ROOT_TO_OMNIVERSE + "/my_test_client.py "
-            call_to_omniverse += " " + ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE + " " + OMNIVERSE_AVATAR
+            call_to_omniverse += " " + ROOT_TO_OMNIVERSE + "/" + OUTPUT_FILE_IN_WAVE
+            call_to_omniverse += " " + my_chatbot.omniverse_avatar
             # call_to_omniverse += " " + OUTPUT_FILE_IN_WAVE.replace(".wav", ".mp3") + " " + OMNIVERSE_AVATAR
             subprocess.call(call_to_omniverse, shell=True)
         else:

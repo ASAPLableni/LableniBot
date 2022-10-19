@@ -26,6 +26,7 @@ class LableniBot:
         self.farewell_message = personalities_dict["FAREWELL_MESSAGE"]
         self.bot_voice_id = personalities_dict["BOT_VOICE_ID"]
         self.engine_type = personalities_dict["ENGINE_TYPE"]
+        self.omniverse_avatar = personalities_dict["OMNIVERSE_AVATAR"]
 
         # Parameters from BOT parameters JSON.
         with open(path_to_bot_param, "r", encoding='utf-8') as read_file:
