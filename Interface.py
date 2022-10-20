@@ -137,17 +137,27 @@ class Interface(Frame):
 
         file_menu.add_separator()
 
-        menu_male_2 = Menu(my_menu)
-        menu_male_2.add_command(label="Neutral 1 (Female)",
-                                command=lambda: self.select_bot("Neutral", "Neutral 1"))
-        menu_male_2.add_separator()
-        menu_male_2.add_command(label="Neutral 2 (Male)",
-                                command=lambda: self.select_bot("Neutral", "Neutral 2"))
-        menu_male_2.add_separator()
-        menu_male_2.add_command(label="Neutral 3 (Female)",
-                                command=lambda: self.select_bot("Neutral", "Neutral 3"))
-        file_menu.add_cascade(label="Neutral", menu=menu_male_2)
+        chatbot_label = "Neutral"
+        female_neutral_1 = self.names_personalities_dict[chatbot_label]["Female Neutral 1"]
+        female_neutral_2 = self.names_personalities_dict[chatbot_label]["Female Neutral 2"]
+        male_neutral_1 = self.names_personalities_dict[chatbot_label]["Male Neutral 1"]
+        male_neutral_2 = self.names_personalities_dict[chatbot_label]["Male Neutral 2"]
 
+        menu_neutral = Menu(my_menu)
+        menu_neutral.add_command(label="Female Neutral 1 (" + female_neutral_1 + ")",
+                                 command=lambda: self.select_bot("Neutral", "Female Neutral 1"))
+        menu_neutral.add_separator()
+        menu_neutral.add_command(label="Female Neutral 2 (" + female_neutral_2 + ")",
+                                 command=lambda: self.select_bot("Neutral", "Female Neutral 2"))
+        menu_neutral.add_separator()
+        menu_neutral.add_command(label="Male Neutral 1 (" + male_neutral_1 + ")",
+                                 command=lambda: self.select_bot("Neutral", "Male Neutral 1"))
+        menu_neutral.add_separator()
+        menu_neutral.add_command(label="Male Neutral 2 (" + male_neutral_2 + ")",
+                                 command=lambda: self.select_bot("Neutral", "Male Neutral 2"))
+        file_menu.add_cascade(label="Neutral", menu=menu_neutral)
+
+        # To write name and ID of the subject.
         Label(self.master, text="Please enter subject's name").pack()
         entry_name = Entry(self.master)
         entry_name.pack()
