@@ -172,7 +172,6 @@ WAVE_OUTPUT_FILENAME = SUB_PATH_TO_DATA + "/Audios/Subject_" + subject_id
 os.mkdir(SUB_PATH_TO_DATA + "/BotAudios")
 WAVE_OUTPUT_FILENAME_BOT = SUB_PATH_TO_DATA + "/BotAudios/BotSubject_" + subject_id
 
-
 # ### Call the time ###
 # subprocess.call("python clock_track.py")
 
@@ -517,46 +516,12 @@ try:
         my_chatbot.counter_conv_id += 1
 
         if my_chatbot.good_bye_message:
-            end_str_time, unix_time = ute.get_current_time()
-
-            with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'rb') as f:
-                guide_of_times = pickle.load(f)
-
-            guide_of_times.append({
-                "RealTimeStr": end_str_time,
-                "UnixTime": unix_time,
-                "Event": my_chatbot.config_name + "_end"
-            })
-
-            with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'wb') as handle:
-                pickle.dump(guide_of_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-            pd.DataFrame(guide_of_times).to_csv(
-                "Conversations/" + my_chatbot.subject_id + '/GuideOfTimes.csv', sep=";", index=False
-            )
-
+            my_chatbot.save_guide_of_times()
             my_chatbot.from_pkl_to_csv()
 
             break
 
 except KeyboardInterrupt:
 
-    end_str_time, unix_time = ute.get_current_time()
-
-    with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'rb') as f:
-        guide_of_times = pickle.load(f)
-
-    guide_of_times.append({
-        "RealTimeStr": end_str_time,
-        "UnixTime": unix_time,
-        "Event": my_chatbot.config_name + "_end"
-    })
-
-    with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'wb') as handle:
-        pickle.dump(guide_of_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    pd.DataFrame(guide_of_times).to_csv(
-        "Conversations/" + my_chatbot.subject_id + '/GuideOfTimes.csv', sep=";", index=False
-    )
-
+    my_chatbot.save_guide_of_times()
     my_chatbot.from_pkl_to_csv()

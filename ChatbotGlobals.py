@@ -2,6 +2,7 @@ import pandas as pd
 import utils as ute
 import re
 import json
+import pickle
 
 
 class LableniBot:
@@ -125,3 +126,22 @@ class LableniBot:
         bot_message = bot_message if bot_message[-1] in [".", "?", "!"] else bot_message + "."
 
         return bot_message
+
+    def save_guide_of_times(self):
+        end_str_time, unix_time = ute.get_current_time()
+
+        with open("Conversations/" + self.subject_id + '/GuideOfTimes.pkl', 'rb') as f:
+            guide_of_times = pickle.load(f)
+
+        guide_of_times.append({
+            "RealTimeStr": end_str_time,
+            "UnixTime": unix_time,
+            "Event": self.config_name + "_end"
+        })
+
+        with open("Conversations/" + self.subject_id + '/GuideOfTimes.pkl', 'wb') as handle:
+            pickle.dump(guide_of_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        pd.DataFrame(guide_of_times).to_csv(
+            "Conversations/" + self.subject_id + '/GuideOfTimes.csv', sep=";", index=False
+        )
