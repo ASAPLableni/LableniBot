@@ -207,19 +207,17 @@ if os.path.exists("Conversations/" + subject_id + '/GuideOfTimes.pkl'):
     with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'rb') as f:
         guide_of_times = pickle.load(f)
 
-    guide_of_times.update({
-        my_chatbot.config_name + "_start": {
-            "InitRealTimeStr": init_str_time,
-            "InitUnixTime": unix_time,
-        }
+    guide_of_times.append({
+        "RealTimeStr": init_str_time,
+        "UnixTime": unix_time,
+        "Event": my_chatbot.config_name + "_start"
     })
 else:
-    guide_of_times = {
-        my_chatbot.config_name + "_start": {
-            "InitRealTimeStr": init_str_time,
-            "InitUnixTime": unix_time,
-        }
-    }
+    guide_of_times = [{
+        "RealTimeStr": init_str_time,
+        "UnixTime": unix_time,
+        "Event": my_chatbot.config_name + "_start"
+    }]
 
 with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'wb') as handle:
     pickle.dump(guide_of_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -524,18 +522,17 @@ try:
             with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'rb') as f:
                 guide_of_times = pickle.load(f)
 
-            guide_of_times.update({
-                my_chatbot.config_name + "_end": {
-                    "EndRealTimeStr": end_str_time,
-                    "EndUnixTime": unix_time,
-                }
+            guide_of_times.append({
+                "RealTimeStr": end_str_time,
+                "UnixTime": unix_time,
+                "Event": my_chatbot.config_name + "_end"
             })
 
             with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'wb') as handle:
                 pickle.dump(guide_of_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
             pd.DataFrame(guide_of_times).to_csv(
-                "Conversations/" + my_chatbot.subject_id + '/GuideOfTimes.csv', sep=";"
+                "Conversations/" + my_chatbot.subject_id + '/GuideOfTimes.csv', sep=";", index=False
             )
 
             my_chatbot.from_pkl_to_csv()
@@ -549,18 +546,17 @@ except KeyboardInterrupt:
     with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'rb') as f:
         guide_of_times = pickle.load(f)
 
-    guide_of_times.update({
-        my_chatbot.config_name + "_end": {
-            "EndRealTimeStr": end_str_time,
-            "EndUnixTime": unix_time,
-        }
+    guide_of_times.append({
+        "RealTimeStr": end_str_time,
+        "UnixTime": unix_time,
+        "Event": my_chatbot.config_name + "_end"
     })
 
     with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'wb') as handle:
         pickle.dump(guide_of_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     pd.DataFrame(guide_of_times).to_csv(
-        "Conversations/" + my_chatbot.subject_id + '/GuideOfTimes.csv', sep=";"
+        "Conversations/" + my_chatbot.subject_id + '/GuideOfTimes.csv', sep=";", index=False
     )
 
     my_chatbot.from_pkl_to_csv()

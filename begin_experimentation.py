@@ -7,7 +7,7 @@ from tkinter import *
 
 from BeginInterface import BeginInterface, SecondInterface, EndInterface
 
-TIME_RECORDING = 2 * 60
+TIME_RECORDING = 2 * 10
 
 # #######################
 # ### First Interface ###
@@ -30,16 +30,10 @@ init_date_str, init_date_unix = ute.get_current_time()
 time.sleep(TIME_RECORDING)  # Two minutes recording
 end_date_str, end_date_unix = ute.get_current_time()
 
-dict_help = {
-    "Open Eyes GSR Begin": {
-        "RealTimeStr": init_date_str,
-        "UnixTime": init_date_unix,
-    },
-    "Open Eyes GSR End": {
-        "RealTimeStr": end_date_str,
-        "UnixTime": end_date_unix,
-    }
-}
+list_help = [
+    {"RealTimeStr": init_date_str, "UnixTime": init_date_unix, "Event": "Open Eyes GSR Begin"},
+    {"RealTimeStr": end_date_str, "UnixTime": end_date_unix, "Event": "Open Eyes GSR End"}
+]
 
 path_to_folder = "Conversations/" + subject_id
 
@@ -47,7 +41,7 @@ if not os.path.exists(path_to_folder):
     os.mkdir(path_to_folder)
 
 with open(path_to_folder + '/GuideOfTimes.pkl', 'wb') as handle:
-    pickle.dump(dict_help, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    pickle.dump(list_help, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # ########################
 # ### Second Interface ###
@@ -65,19 +59,12 @@ init_date_str, init_date_unix = ute.get_current_time()
 time.sleep(TIME_RECORDING)  # Two minutes recording
 end_date_str, end_date_unix = ute.get_current_time()
 
-dict_help.update({
-    "Closed Eyes GSR Begin": {
-        "RealTimeStr": init_date_str,
-        "UnixTime": init_date_unix,
-    },
-    "Closed Eyes GSR End": {
-        "RealTimeStr": end_date_str,
-        "UnixTime": end_date_unix,
-    }
-})
+list_help.append({"RealTimeStr": init_date_str, "UnixTime": init_date_unix, "Event": "Closed Eyes GSR Begin"})
+
+list_help.append({"RealTimeStr": end_date_str, "UnixTime": end_date_unix, "Event": "Closed Eyes GSR End"})
 
 with open(path_to_folder + '/GuideOfTimes.pkl', 'wb') as handle:
-    pickle.dump(dict_help, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    pickle.dump(list_help, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # #####################
 # ### END INTERFACE ###

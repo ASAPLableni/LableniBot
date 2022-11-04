@@ -67,7 +67,7 @@ class Interface(Frame):
         menu_female_1.add_separator()
         menu_female_1.add_command(label="Angry State (" + name_angry + ")",
                                   command=lambda: self.select_bot("Female Bot 1", "Angry State"))
-        file_menu.add_cascade(label="Female Bot 1", menu=menu_female_1)
+        file_menu.add_cascade(label="Female Bot C", menu=menu_female_1)
 
         file_menu.add_separator()
 
@@ -89,7 +89,7 @@ class Interface(Frame):
         menu_male_1.add_separator()
         menu_male_1.add_command(label="Angry State (" + name_angry + ")",
                                 command=lambda: self.select_bot("Male Bot 1", "Angry State"))
-        file_menu.add_cascade(label="Male Bot 1", menu=menu_male_1)
+        file_menu.add_cascade(label="Male Bot C", menu=menu_male_1)
 
         file_menu.add_separator()
 
@@ -111,7 +111,7 @@ class Interface(Frame):
         menu_female_2.add_separator()
         menu_female_2.add_command(label="Angry State (" + name_angry + ")",
                                   command=lambda: self.select_bot("Female Bot 2", "Angry State"))
-        file_menu.add_cascade(label="Female Bot 2", menu=menu_female_2)
+        file_menu.add_cascade(label="Female Bot SF", menu=menu_female_2)
 
         file_menu.add_separator()
 
@@ -133,7 +133,7 @@ class Interface(Frame):
         menu_male_2.add_separator()
         menu_male_2.add_command(label="Angry State (" + name_angry + ")",
                                 command=lambda: self.select_bot("Male Bot 2", "Angry State"))
-        file_menu.add_cascade(label=chatbot_label, menu=menu_male_2)
+        file_menu.add_cascade(label="Male Bot SF", menu=menu_male_2)
 
         file_menu.add_separator()
 
@@ -144,16 +144,16 @@ class Interface(Frame):
         male_neutral_2 = self.names_personalities_dict[chatbot_label]["Male Neutral 2"]
 
         menu_neutral = Menu(my_menu)
-        menu_neutral.add_command(label="Female Neutral 1 (" + female_neutral_1 + ")",
+        menu_neutral.add_command(label="Female Neutral C (" + female_neutral_1 + ")",
                                  command=lambda: self.select_bot("Neutral", "Female Neutral 1"))
         menu_neutral.add_separator()
-        menu_neutral.add_command(label="Female Neutral 2 (" + female_neutral_2 + ")",
+        menu_neutral.add_command(label="Female Neutral SF (" + female_neutral_2 + ")",
                                  command=lambda: self.select_bot("Neutral", "Female Neutral 2"))
         menu_neutral.add_separator()
-        menu_neutral.add_command(label="Male Neutral 1 (" + male_neutral_1 + ")",
+        menu_neutral.add_command(label="Male Neutral C (" + male_neutral_1 + ")",
                                  command=lambda: self.select_bot("Neutral", "Male Neutral 1"))
         menu_neutral.add_separator()
-        menu_neutral.add_command(label="Male Neutral 2 (" + male_neutral_2 + ")",
+        menu_neutral.add_command(label="Male Neutral SF (" + male_neutral_2 + ")",
                                  command=lambda: self.select_bot("Neutral", "Male Neutral 2"))
         file_menu.add_cascade(label="Neutral", menu=menu_neutral)
 
