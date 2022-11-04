@@ -113,7 +113,8 @@ google_client = speech.SpeechClient.from_service_account_json(GOOGLE_ROOT)
 # ### SILENCE DETECTION MODEL ###
 # ###############################
 
-silence_detection_pipeline = VoiceActivityDetection(segmentation="pyannote/segmentation")
+silence_detection_pipeline = VoiceActivityDetection(segmentation="pyannote/segmentation",
+                                                    use_auth_token=config_dict["HUGGING_FACE"])
 HYPER_PARAMETERS = {
     # onset/offset activation thresholds
     "onset": 0.5, "offset": 0.5,
@@ -531,7 +532,7 @@ try:
                 pickle.dump(guide_of_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
             pd.DataFrame(guide_of_times).to_csv(
-                "Conversations/" + subject_id + '/GuideOfTimes.csv', index=False, sep=";"
+                "Conversations/" + my_chatbot.subject_id + '/GuideOfTimes.csv', sep=";"
             )
 
             my_chatbot.from_pkl_to_csv()
@@ -539,6 +540,8 @@ try:
             break
 
 except KeyboardInterrupt:
+
+    end_str_time, unix_time = ute.get_current_time()
 
     with open("Conversations/" + subject_id + '/GuideOfTimes.pkl', 'rb') as f:
         guide_of_times = pickle.load(f)
@@ -554,7 +557,7 @@ except KeyboardInterrupt:
         pickle.dump(guide_of_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     pd.DataFrame(guide_of_times).to_csv(
-        "Conversations/" + subject_id + '/GuideOfTimes.csv', index=False, sep=";"
+        "Conversations/" + my_chatbot.subject_id + '/GuideOfTimes.csv', sep=";"
     )
 
     my_chatbot.from_pkl_to_csv()
