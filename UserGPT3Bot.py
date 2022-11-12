@@ -172,6 +172,7 @@ WAVE_OUTPUT_FILENAME = SUB_PATH_TO_DATA + "/Audios/Subject_" + subject_id
 os.mkdir(SUB_PATH_TO_DATA + "/BotAudios")
 WAVE_OUTPUT_FILENAME_BOT = SUB_PATH_TO_DATA + "/BotAudios/BotSubject_" + subject_id
 
+
 # ### Call the time ###
 # subprocess.call("python clock_track.py")
 

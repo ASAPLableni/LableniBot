@@ -56,7 +56,7 @@ def make_scatter_plot(df, x_feat, x_name, y_feat, y_name, alpha_th=0.6, fontsize
     print("Correlation value", corr_v)
     print("P-value", get_p_string(corr_pvalue))
 
-    plt.figure(figsize=(12, 5))
+    plt.figure(figsize=(12, 5), dpi=300)
 
     if lr_mode:
         lr = linear_model.LinearRegression(n_jobs=-1)
@@ -85,7 +85,7 @@ def make_binary_plot(data, x_feat, x_name, y_feat, y_name, violin_plot=False):
 
     print("P-value", pvalue, "with significance", get_p_string(pvalue))
 
-    plt.figure(figsize=(10, 5))
+    plt.figure(figsize=(10, 5), dpi=300)
 
     if violin_plot:
         sns.violinplot(data=data, x=x_feat, y=y_feat)
