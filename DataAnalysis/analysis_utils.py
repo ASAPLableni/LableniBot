@@ -49,10 +49,10 @@ def stat_print(list_x, name, precision=4, quantile=False):
         )
 
 
-def make_scatter_plot(df, x_feat, x_name, y_feat, y_name, alpha_th=0.6, fontsize_th=14, lr_mode=True):
-    data_idx = df[[x_feat, y_feat]].dropna().index.values
+def make_scatter_plot(data, x_feat, x_name, y_feat, y_name, alpha_th=0.6, fontsize_th=14, lr_mode=True):
+    data_idx = data[[x_feat, y_feat]].dropna().index.values
 
-    corr_v, corr_pvalue = stats.pearsonr(df.loc[data_idx, x_feat].values, df.loc[data_idx, y_feat].values)
+    corr_v, corr_pvalue = stats.pearsonr(data.loc[data_idx, x_feat].values, data.loc[data_idx, y_feat].values)
     print("Correlation value", corr_v)
     print("P-value", get_p_string(corr_pvalue))
 
@@ -60,18 +60,18 @@ def make_scatter_plot(df, x_feat, x_name, y_feat, y_name, alpha_th=0.6, fontsize
 
     if lr_mode:
         lr = linear_model.LinearRegression(n_jobs=-1)
-        lr.fit(df.loc[data_idx, x_feat].values.reshape(-1, 1), df.loc[data_idx, y_feat])
-        y_pred = lr.predict(df.loc[data_idx, x_feat].values.reshape(-1, 1))
+        lr.fit(data.loc[data_idx, x_feat].values.reshape(-1, 1), data.loc[data_idx, y_feat])
+        y_pred = lr.predict(data.loc[data_idx, x_feat].values.reshape(-1, 1))
 
         print("Coefficients: \n", lr.coef_, "\nIntercept: \n", lr.intercept_)
-        print("R-square: %.2f" % r2_score(df.loc[data_idx, y_feat], y_pred))
+        print("R-square: %.2f" % r2_score(data.loc[data_idx, y_feat], y_pred))
 
-        plt.plot(df.loc[data_idx, x_feat], y_pred, c="red", label="Linear Regression")
+        plt.plot(data.loc[data_idx, x_feat], y_pred, c="red", label="Linear Regression")
         plt.legend(fontsize=12)
-        delta_int = np.abs(np.nanmax(df[y_feat]) - np.nanmin(df[y_feat]))
-        plt.ylim(np.nanmin(df[y_feat]) - 0.1 * delta_int, np.nanmax(df[y_feat]) + 0.1 * delta_int)
+        delta_int = np.abs(np.nanmax(data[y_feat]) - np.nanmin(data[y_feat]))
+        plt.ylim(np.nanmin(data[y_feat]) - 0.1 * delta_int, np.nanmax(data[y_feat]) + 0.1 * delta_int)
 
-    plt.scatter(df[x_feat], df[y_feat], alpha=0.6)
+    plt.scatter(data[x_feat], data[y_feat], alpha=0.6)
 
     plt.xlabel(x_name, fontsize=14)
     plt.ylabel(y_name, fontsize=14)
