@@ -7,7 +7,7 @@ from tkinter import *
 
 from BeginInterface import BeginInterface, SecondInterface, EndInterface
 
-TIME_RECORDING = 2 * 10
+TIME_RECORDING = 2 * 60
 
 # #######################
 # ### First Interface ###

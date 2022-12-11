@@ -8,9 +8,10 @@ import pickle
 class LableniBot:
 
     def __init__(self,
-                 subject_id, mode_chat,
+                 subject_id, subject_name, mode_chat,
                  path_to_bot_param, path_to_bot_personality, path_to_save):
         self.subject_id = subject_id
+        self.subject_name = subject_name
         self.mode_chat = mode_chat
         self.path_to_save = path_to_save
 
@@ -103,10 +104,10 @@ class LableniBot:
 
         # Remove certain expressions as "JaJa".
         bad_expressions = [
-            "JaJa ", "JaJa,", "jaja ", "xd ", "XD ", "Xd ", "Xd,", "Ah ", "ah ", "Ah,"
+            "JaJa", "Jaja", "jaja", "xd", "XD", "Xd", "Ah", "ah", "Ah"
         ]
         for bad_expr in bad_expressions:
-            bot_message = bot_message.replace(bad_expr, " ")
+            bot_message = bot_message.replace(bad_expr, "")
 
         # Find and remove words inside parenthesis as "(Risas)", etc.
         to_find_in_parenthesis = r'\((.*?)\)'
@@ -126,6 +127,24 @@ class LableniBot:
         bot_message = bot_message if bot_message[-1] in [".", "?", "!"] else bot_message + "."
 
         return bot_message
+
+    def remove_spanish_accents(self, message):
+        words_accent_list = ["á", "é", "í", "ó", "ú"]
+        words_no_accent_list = ["a", "e", "i", "o", "u"]
+        break_loop = False
+        for word in message.split():
+            for i_word, word_accent in enumerate(words_accent_list):
+                if word_accent in word:
+                    if self.subject_name == word.replace(word_accent, words_no_accent_list[i_word]):
+                        subject_sent_name = word.replace(word_accent, words_no_accent_list[i_word])
+                        message = message.replace(word, subject_sent_name)
+                        break_loop = True
+                        break
+
+            if break_loop:
+                break
+
+        return message
 
     def save_guide_of_times(self):
         end_str_time, unix_time = ute.get_current_time()

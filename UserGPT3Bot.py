@@ -188,6 +188,7 @@ def init_clock():
 
 my_chatbot = LableniBot(
     subject_id=subject_id,
+    subject_name=subject_name,
     mode_chat=CHAT_MODE,
     path_to_bot_param="LableniBotConfig/bot_parameters.json",
     path_to_bot_personality="LableniBotConfig/Personalities/" + bot_txt_to_root + "/" + bot_state_to_root + ".json",
@@ -261,7 +262,10 @@ try:
                 t_f_openai = ute.get_current_time(only_unix=True)
 
                 bot_answer = response["choices"][0]["text"]
-                bot_answer = ":".join(bot_answer.split(":")[:2]) if len(bot_answer.split(":")) > 2 else bot_answer
+                if len(bot_answer.split(":")) > 1:
+                    bot_answer = my_chatbot.remove_spanish_accents(bot_answer)
+                    if subject_name + ":" in bot_answer:
+                        bot_answer = bot_answer.split(subject_name + ":")[0]
 
             else:
                 t_i_openai = ute.get_current_time(only_unix=True)
@@ -469,6 +473,7 @@ try:
             t_f_s2t = ute.get_current_time(only_unix=True)
 
             spanish_text, repeat_message_label = ute.process_googles2t_answer(response.results)
+            spanish_text = my_chatbot.remove_spanish_accents(spanish_text)
 
         elif CHAT_MODE == "write":
             print("Write something....")
