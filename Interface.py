@@ -247,23 +247,35 @@ class Interface(Frame):
         # ### Neutral state ###
         # #####################
         chatbot_label = "Neutral"
-        female_neutral_1 = self.names_personalities_dict[chatbot_label]["Female Neutral 1"]
-        female_neutral_2 = self.names_personalities_dict[chatbot_label]["Female Neutral 2"]
-        male_neutral_1 = self.names_personalities_dict[chatbot_label]["Male Neutral 1"]
-        male_neutral_2 = self.names_personalities_dict[chatbot_label]["Male Neutral 2"]
+        female_neutral_1 = self.names_personalities_dict[chatbot_label]["Female Neutral C 1"]
+        female_neutral_2 = self.names_personalities_dict[chatbot_label]["Female Neutral SF 2"]
+        male_neutral_1 = self.names_personalities_dict[chatbot_label]["Male Neutral C 1"]
+        male_neutral_2 = self.names_personalities_dict[chatbot_label]["Male Neutral SF 2"]
 
         menu_neutral = Menu(my_menu)
-        menu_neutral.add_command(label="Female Neutral C (" + female_neutral_1 + ")",
-                                 command=lambda: self.select_bot("Neutral", "Female Neutral 1"))
+        menu_neutral.add_command(label="Female Neutral C 1 (" + female_neutral_1 + ")",
+                                 command=lambda: self.select_bot("Neutral", "Female Neutral C 1"))
         menu_neutral.add_separator()
-        menu_neutral.add_command(label="Female Neutral SF (" + female_neutral_2 + ")",
-                                 command=lambda: self.select_bot("Neutral", "Female Neutral 2"))
+        menu_neutral.add_command(label="Female Neutral SF 1 (" + female_neutral_1 + ")",
+                                 command=lambda: self.select_bot("Neutral", "Female Neutral SF 1"))
         menu_neutral.add_separator()
-        menu_neutral.add_command(label="Male Neutral C (" + male_neutral_1 + ")",
-                                 command=lambda: self.select_bot("Neutral", "Male Neutral 1"))
+        menu_neutral.add_command(label="Female Neutral C 2 (" + female_neutral_2 + ")",
+                                 command=lambda: self.select_bot("Neutral", "Female Neutral C 2"))
         menu_neutral.add_separator()
-        menu_neutral.add_command(label="Male Neutral SF (" + male_neutral_2 + ")",
-                                 command=lambda: self.select_bot("Neutral", "Male Neutral 2"))
+        menu_neutral.add_command(label="Female Neutral SF 2 (" + female_neutral_2 + ")",
+                                 command=lambda: self.select_bot("Neutral", "Female Neutral SF 2"))
+        menu_neutral.add_separator()
+        menu_neutral.add_command(label="Male Neutral C 1 (" + male_neutral_1 + ")",
+                                 command=lambda: self.select_bot("Neutral", "Male Neutral C 1"))
+        menu_neutral.add_separator()
+        menu_neutral.add_command(label="Male Neutral SF 1 (" + male_neutral_1 + ")",
+                                 command=lambda: self.select_bot("Neutral", "Male Neutral SF 1"))
+        menu_neutral.add_separator()
+        menu_neutral.add_command(label="Male Neutral C 2 (" + male_neutral_2 + ")",
+                                 command=lambda: self.select_bot("Neutral", "Male Neutral C 2"))
+        menu_neutral.add_separator()
+        menu_neutral.add_command(label="Male Neutral SF 2 (" + male_neutral_2 + ")",
+                                 command=lambda: self.select_bot("Neutral", "Male Neutral SF 2"))
         file_menu.add_cascade(label="Neutral", menu=menu_neutral)
 
         # To write name and ID of the subject.
