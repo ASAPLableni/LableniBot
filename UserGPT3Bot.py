@@ -256,7 +256,7 @@ try:
                     top_p=1,
                     frequency_penalty=BOT_FREQUENCY_PENALTY,
                     presence_penalty=BOT_PRESENCE_PENALTY,
-                    stop=["Humano:", "Human:", subject_name + ":"]
+                    stop=["Humano:", "Michelle:", subject_name + ":"]
                 )
 
                 t_f_openai = ute.get_current_time(only_unix=True)
