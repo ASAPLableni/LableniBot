@@ -104,7 +104,7 @@ class LableniBot:
 
         # Remove certain expressions as "JaJa".
         bad_expressions = [
-            "JaJa", "Jaja", "jaja", "xd", "XD", "Xd", "Ah", "ah", "Ah"
+            "JaJa", "Jaja", "jaja", "xd", "XD", "Xd", "Ah ", "ah ", "Ah,", "ah,"
         ]
         for bad_expr in bad_expressions:
             bot_message = bot_message.replace(bad_expr, "")
