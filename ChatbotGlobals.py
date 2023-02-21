@@ -109,12 +109,8 @@ class LableniBot:
         for bad_expr in bad_expressions:
             bot_message = bot_message.replace(bad_expr, "")
 
-        # Find and remove words inside parenthesis as "(Risas)", etc.
-        to_find_in_parenthesis = r'\((.*?)\)'
-        regex_parenthesis = re.findall(to_find_in_parenthesis, bot_message)
-        if len(regex_parenthesis) > 0:
-            for regex_par in regex_parenthesis:
-                bot_message = bot_message.replace("(" + regex_par + ")", "")
+        # Find and remove words inside parenthesis or brackets as "(Risas)" or "[Risas]", etc.
+        bot_message = re.sub(r'[\(\[].*?[\)\]]', "", bot_message)
 
         # Keep only the first X sentences before a dot, to avoid very long message.
         message_split = bot_message.split(".")
