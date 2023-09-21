@@ -1,4 +1,4 @@
-import os
+﻿import os
 import openai
 
 import time
@@ -17,7 +17,7 @@ my_global_mssg = ''
 broker = "158.42.170.142" 
 port = 1883
 
-openai.api_key = "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"
+openai.api_key = ""
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
